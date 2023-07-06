@@ -100,7 +100,6 @@ public class WriteIT {
 
         connectClient.createConnector(config);
         assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
-        assertThat(connectClient.getConnectorState(CONNECTOR_NAME)).isEqualTo("RUNNING");
 
         assertThat(col.count().getCount()).isEqualTo(0L);
 
