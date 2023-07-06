@@ -1,3 +1,5 @@
+package deployment;
+
 public interface KafkaConnectDeployment {
 
     static KafkaConnectDeployment getInstance() {

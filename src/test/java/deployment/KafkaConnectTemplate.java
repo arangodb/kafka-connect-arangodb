@@ -1,3 +1,5 @@
+package deployment;
+
 import org.sourcelab.kafka.connect.apiclient.Configuration;
 import org.sourcelab.kafka.connect.apiclient.KafkaConnectClient;
 import org.sourcelab.kafka.connect.apiclient.request.dto.NewConnectorDefinition;

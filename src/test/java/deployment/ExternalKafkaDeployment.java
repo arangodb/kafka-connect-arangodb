@@ -1,3 +1,5 @@
+package deployment;
+
 import java.util.Objects;
 
 enum ExternalKafkaDeployment implements KafkaDeployment {

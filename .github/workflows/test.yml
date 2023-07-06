@@ -1,0 +1,47 @@
+name: Java CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "cluster"
+            kafka-connect-host: "http://172.28.11.11:8083"
+          - name: "standalone"
+
+    name: ${{ matrix.name }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: maven
+      - name: Unit Tests
+        run: mvn package
+      - name: Create Network
+        run: ./docker/create_network.sh
+      - name: Start Kafka
+        run: ./docker/start_kafka.sh
+      - name: Start Database
+        run: ./docker/start_db.sh
+      - name: Start Kafka Connect
+        run: ./docker/start_kafka_connect.sh
+        if: ${{matrix.name}} == "cluster"
+      - name: Integration Tests
+        run: mvn integration-test -Dkafka.bootstrap.servers=172.28.11.1:9092 -Dkafka.connect.host=${{matrix.kafka-connect-host}}

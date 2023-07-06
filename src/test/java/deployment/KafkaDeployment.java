@@ -1,4 +1,6 @@
-public interface KafkaDeployment {
+package deployment;
+
+interface KafkaDeployment {
 
     static KafkaDeployment getInstance() {
         return ExternalKafkaDeployment.INSTANCE;
