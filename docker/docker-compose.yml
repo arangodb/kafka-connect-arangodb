@@ -1,0 +1,120 @@
+version: "2"
+
+services:
+  kafka-0:
+    image: docker.io/bitnami/kafka:3.4
+    ports:
+      - '9092:9092'
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,PLAINTEXT_HOST://0.0.0.0:9092,CONTROLLER://:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-0:29092,PLAINTEXT_HOST://localhost:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+  kafka-1:
+    image: docker.io/bitnami/kafka:3.4
+    ports:
+      - '9192:9192'
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,PLAINTEXT_HOST://0.0.0.0:9192,CONTROLLER://:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-1:29092,PLAINTEXT_HOST://localhost:9192
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+  kafka-2:
+    image: docker.io/bitnami/kafka:3.4
+    ports:
+      - '9292:9292'
+    environment:
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,PLAINTEXT_HOST://0.0.0.0:9292,CONTROLLER://:9093
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka-2:29092,PLAINTEXT_HOST://localhost:9292
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+
+  kafka-connect-1:
+    image: confluentinc/cp-kafka-connect:7.4.0
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    ports:
+      - '18083:8083'
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka-0:29092,kafka-1:29092,kafka-2:29092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: kafka-connect
+      CONNECT_CONFIG_STORAGE_TOPIC: kafka-connect.config
+      CONNECT_OFFSET_STORAGE_TOPIC: kafka-connect.offsets
+      CONNECT_STATUS_STORAGE_TOPIC: kafka-connect.status
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect-1"
+      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_PLUGIN_PATH: /usr/share/java
+    volumes:
+      - $PWD/data/kafka-connect-arangodb:/usr/share/java/kafka-connect-arangodb
+      - $PWD/data/confluentinc-kafka-connect-datagen:/usr/share/java/confluentinc-kafka-connect-datagen
+
+  kafka-connect-2:
+    image: confluentinc/cp-kafka-connect:7.4.0
+    depends_on:
+      - kafka-0
+      - kafka-1
+      - kafka-2
+    ports:
+      - '28083:8083'
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka-0:29092,kafka-1:29092,kafka-2:29092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: kafka-connect
+      CONNECT_CONFIG_STORAGE_TOPIC: kafka-connect.config
+      CONNECT_OFFSET_STORAGE_TOPIC: kafka-connect.offsets
+      CONNECT_STATUS_STORAGE_TOPIC: kafka-connect.status
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect-2"
+      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_PLUGIN_PATH: /usr/share/java
+    volumes:
+      - $PWD/data/kafka-connect-arangodb:/usr/share/java/kafka-connect-arangodb
+      - $PWD/data/confluentinc-kafka-connect-datagen:/usr/share/java/confluentinc-kafka-connect-datagen
+
+  redpanda-console:
+    image: docker.io/redpandadata/console:v2.2.4
+    ports:
+      - '8080:8080'
+    environment:
+      KAFKA_BROKERS: kafka-0:29092,kafka-1:29092,kafka-2:29092
+      CONNECT_ENABLED: 'true'
+      CONNECT_CLUSTERS_NAME: kafka-connect
+      CONNECT_CLUSTERS_URL: http://kafka-connect-1:8083
+
+networks:
+  default:
+    external:
+      name: arangodb

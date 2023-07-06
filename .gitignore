@@ -56,3 +56,5 @@ build/
 
 .idea
 .flattened-pom.xml
+/docker/jwtHeader
+/docker/jwtSecret
