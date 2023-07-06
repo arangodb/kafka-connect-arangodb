@@ -44,4 +44,4 @@ jobs:
         run: ./docker/start_kafka_connect.sh
         if: ${{matrix.name}} == "cluster"
       - name: Integration Tests
-        run: mvn integration-test -Dkafka.bootstrap.servers=172.28.11.1:9092 -Dkafka.connect.host=${{matrix.kafka-connect-host}}
+        run: mvn integration-test -Dkafka.connect.host=${{matrix.kafka-connect-host}}
