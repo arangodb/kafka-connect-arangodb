@@ -172,6 +172,11 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -330,6 +335,7 @@
                                         <exclude>jakarta.activation:jakarta.activation-api</exclude>
                                         <exclude>org.javassist:javassist</exclude>
                                         <exclude>ch.qos.reload4j:reload4j</exclude>
+                                        <exclude>io.swagger.core.v3</exclude>
                                     </excludes>
                                 </dependencyConvergence>
                                 <requireMavenVersion>
