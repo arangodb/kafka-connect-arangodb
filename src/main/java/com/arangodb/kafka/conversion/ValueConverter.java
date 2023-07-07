@@ -48,19 +48,11 @@ public class ValueConverter {
 
     public ObjectNode convert(SinkRecord record) {
         Object value = record.value();
-        JsonNode tree;
-        try {
-            if (value instanceof Map) {
-                tree = parseObject(record);
-            } else if (value instanceof Struct) {
-                tree = parseObject(record);
-            } else {
-                throw new DataException("Unsupported record value format: " + record.value().getClass());
-            }
-        } catch (SerializationException e) {
-            throw new DataException(e);
+        if (!(value instanceof Map) && !(value instanceof Struct)) {
+            throw new DataException("Unsupported record value format: " + record.value().getClass());
         }
 
+        JsonNode tree = parseObject(record);
         if (!(tree instanceof ObjectNode)) {
             throw new DataException("Record value cannot be read as JSON object");
         }
@@ -69,8 +61,12 @@ public class ValueConverter {
     }
 
     private JsonNode parseObject(SinkRecord record) {
-        byte[] value = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
-        return deserializer.deserialize(record.topic(), value);
+        try {
+            byte[] value = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
+            return deserializer.deserialize(record.topic(), value);
+        } catch (SerializationException e) {
+            throw new DataException(e);
+        }
     }
 
 }

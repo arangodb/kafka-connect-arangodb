@@ -23,6 +23,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import deployment.KafkaConnectDeployment;
 import deployment.KafkaConnectOperations;
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -43,15 +46,28 @@ public class WriteIT {
 
     private static final String ADB_HOST = "172.28.0.1";
     private static final int ADB_PORT = 8529;
+    private static final String SCHEMA_REGISTRY_URL = "http://172.28.11.21:8081";
     private static final String CONNECTOR_NAME = "my-connector";
     private static final String CONNECTOR_CLASS = ArangoSinkConnector.class.getName();
     private static KafkaConnectDeployment kafkaConnect;
     private static KafkaConnectOperations connectClient;
+    private static final Schema VALUE_RECORD_SCHEMA = new Schema.Parser()
+            .parse("{"
+                    + "  \"type\":\"record\","
+                    + "  \"name\":\"record\","
+                    + "  \"fields\": ["
+                    + "    {\"name\":\"_key\",\"type\":\"string\"}, "
+                    + "    {\"name\":\"foo\",\"type\":\"string\"}"
+                    + "  ]"
+                    + "}");
 
     private String topicName;
     private ArangoCollection col;
     private AdminClient adminClient;
-    private KafkaProducer<JsonNode, JsonNode> producer;
+    private KafkaProducer<JsonNode, JsonNode> jsonProducer;
+    private KafkaProducer<String, GenericRecord> avroProducer;
+    private KafkaProducer<String, String> stringProducer;
+
 
     @BeforeAll
     static void setUpAll() {
@@ -85,26 +101,45 @@ public class WriteIT {
         adminClient = AdminClient.create(adminClientConfig);
         adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, 2, (short) 1))).all().get();
 
-        Map<String, Object> producerProps = new HashMap<>();
-        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConnect.getBootstrapServers());
-        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonSerializer");
-        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonSerializer");
-        producerProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
-        producer = new KafkaProducer<>(producerProps);
+        Map<String, Object> jsonProducerProps = new HashMap<>();
+        jsonProducerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConnect.getBootstrapServers());
+        jsonProducerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonSerializer");
+        jsonProducerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.connect.json.JsonSerializer");
+        jsonProducerProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
+        jsonProducer = new KafkaProducer<>(jsonProducerProps);
+
+        Map<String, Object> avroProducerProps = new HashMap<>();
+        avroProducerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConnect.getBootstrapServers());
+        avroProducerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        avroProducerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
+        avroProducerProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
+        avroProducerProps.put("schema.registry.url", SCHEMA_REGISTRY_URL);
+        avroProducer = new KafkaProducer<>(avroProducerProps);
+
+        Map<String, Object> stringProducerProps = new HashMap<>();
+        stringProducerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConnect.getBootstrapServers());
+        stringProducerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        stringProducerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        stringProducerProps.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
+        stringProducer = new KafkaProducer<>(stringProducerProps);
     }
 
     @AfterEach
     void tearDown() {
         adminClient.close();
-        producer.close();
+        jsonProducer.close();
     }
 
     @Test
     @Timeout(30)
-    void testBasicDelivery() throws ExecutionException, InterruptedException {
+    void testBasicDeliveryJson() throws ExecutionException, InterruptedException {
         Map<String, String> config = new HashMap<>();
         config.put("name", CONNECTOR_NAME);
         config.put("connector.class", CONNECTOR_CLASS);
+        config.put("key.converter", "org.apache.kafka.connect.json.JsonConverter");
+        config.put("value.converter", "org.apache.kafka.connect.json.JsonConverter");
+        config.put("key.converter.schemas.enable", "false");
+        config.put("value.converter.schemas.enable", "false");
         config.put("topics", topicName);
         config.put("tasks.max", "2");
         config.put("arango.host", ADB_HOST);
@@ -120,14 +155,14 @@ public class WriteIT {
         assertThat(col.count().getCount()).isEqualTo(0L);
 
         for (int i = 0; i < 1_000; i++) {
-            producer.send(new ProducerRecord<>(topicName,
+            jsonProducer.send(new ProducerRecord<>(topicName,
                     JsonNodeFactory.instance.objectNode().put("id", "foo-" + i),
                     JsonNodeFactory.instance.objectNode()
                             .put("_key", "k-" + i)
                             .put("foo", "bar-" + i)
             )).get();
         }
-        producer.flush();
+        jsonProducer.flush();
 
         await("Request received by ADB")
                 .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(100))
@@ -139,5 +174,95 @@ public class WriteIT {
         connectClient.deleteConnector(CONNECTOR_NAME);
         assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);
     }
+
+    @Test
+    @Timeout(30)
+    void testBasicDeliveryAvro() throws ExecutionException, InterruptedException {
+        Map<String, String> config = new HashMap<>();
+        config.put("name", CONNECTOR_NAME);
+        config.put("connector.class", CONNECTOR_CLASS);
+        config.put("key.converter", "org.apache.kafka.connect.storage.StringConverter");
+        config.put("value.converter", "io.confluent.connect.avro.AvroConverter");
+        config.put("value.converter.schema.registry.url", SCHEMA_REGISTRY_URL);
+        config.put("topics", topicName);
+        config.put("tasks.max", "2");
+        config.put("arango.host", ADB_HOST);
+        config.put("arango.port", String.valueOf(ADB_PORT));
+        config.put("arango.user", "root");
+        config.put("arango.password", "test");
+        config.put("arango.database", "_system");
+        config.put("arango.collection", col.name());
+
+        connectClient.createConnector(config);
+        assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
+
+        assertThat(col.count().getCount()).isEqualTo(0L);
+
+        for (int i = 0; i < 1_000; i++) {
+            GenericData.Record valueRecord = new GenericData.Record(VALUE_RECORD_SCHEMA);
+            valueRecord.put("_key", "k-" + i);
+            valueRecord.put("foo", "bar-" + i);
+
+            avroProducer.send(new ProducerRecord<>(topicName,
+                    "id-" + i,
+                    valueRecord
+            )).get();
+        }
+        avroProducer.flush();
+
+        await("Request received by ADB")
+                .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(100))
+                .until(() -> col.count().getCount() >= 1_000L);
+
+        BaseDocument doc0 = col.getDocument("k-0", BaseDocument.class);
+        assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
+
+        connectClient.deleteConnector(CONNECTOR_NAME);
+        assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);
+    }
+
+    @Test
+    @Timeout(30)
+    void testBasicDeliveryString() throws ExecutionException, InterruptedException {
+        Map<String, String> config = new HashMap<>();
+        config.put("name", CONNECTOR_NAME);
+        config.put("connector.class", CONNECTOR_CLASS);
+        config.put("key.converter", "org.apache.kafka.connect.json.JsonConverter");
+        config.put("value.converter", "org.apache.kafka.connect.json.JsonConverter");
+        config.put("key.converter.schemas.enable", "false");
+        config.put("value.converter.schemas.enable", "false");
+        config.put("topics", topicName);
+        config.put("tasks.max", "2");
+        config.put("arango.host", ADB_HOST);
+        config.put("arango.port", String.valueOf(ADB_PORT));
+        config.put("arango.user", "root");
+        config.put("arango.password", "test");
+        config.put("arango.database", "_system");
+        config.put("arango.collection", col.name());
+
+        connectClient.createConnector(config);
+        assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
+
+        assertThat(col.count().getCount()).isEqualTo(0L);
+
+        for (int i = 0; i < 1_000; i++) {
+            stringProducer.send(new ProducerRecord<>(topicName,
+                    "\"id-" + i + "\"",
+                    "{\"_key\":\"k-" + i + "\",\"foo\":\"bar-" + i + "\"}"
+            )).get();
+        }
+        stringProducer.flush();
+
+        await("Request received by ADB")
+                .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(100))
+                .until(() -> col.count().getCount() >= 1_000L);
+
+        BaseDocument doc0 = col.getDocument("k-0", BaseDocument.class);
+        assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
+
+        connectClient.deleteConnector(CONNECTOR_NAME);
+        assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);
+    }
+
 
 }

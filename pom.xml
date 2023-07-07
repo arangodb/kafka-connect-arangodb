@@ -50,9 +50,23 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kafka.version>3.4.1</kafka.version>
+        <confluent.version>7.4.0</confluent.version>
         <jackson.version>2.13.5</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
+            <id>confluent</id>
+            <name>Confluent</name>
+            <url>https://packages.confluent.io/maven/</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -94,6 +108,12 @@
             <groupId>org.apache.kafka</groupId>
             <artifactId>connect-runtime</artifactId>
             <version>${kafka.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.confluent</groupId>
+            <artifactId>kafka-connect-avro-converter</artifactId>
+            <version>${confluent.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
