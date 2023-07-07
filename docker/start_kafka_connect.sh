@@ -7,7 +7,7 @@ LOCATION=$(pwd)/$(dirname "$0")
 docker run -d \
   --name kafka-connect-1 -h kafka-connect-1 \
   --network arangodb --ip "$KAFKA_CONNECT_IP" \
-  -v "$LOCATION"/../target/kafka-connect-arangodb-1.0.0-SNAPSHOT.jar:/usr/share/java/kafka-connect-arangodb/kafka-connect-arangodb-1.0.0-SNAPSHOT.jar \
+  -v "$LOCATION"/../target:/usr/share/java/kafka-connect-arangodb \
   -e CONNECT_BOOTSTRAP_SERVERS="$KAFKA_IP:9092" \
   -e CONNECT_GROUP_ID="kafka-connect" \
   -e CONNECT_CONFIG_STORAGE_TOPIC="kafka-connect.config" \

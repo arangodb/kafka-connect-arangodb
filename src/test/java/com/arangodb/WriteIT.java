@@ -18,6 +18,7 @@
 
 package com.arangodb;
 
+import com.arangodb.entity.BaseDocument;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import deployment.KafkaConnectDeployment;
@@ -121,7 +122,9 @@ public class WriteIT {
         for (int i = 0; i < 1_000; i++) {
             producer.send(new ProducerRecord<>(topicName,
                     JsonNodeFactory.instance.objectNode().put("id", "foo-" + i),
-                    JsonNodeFactory.instance.objectNode().put("foo", "bar-" + i)
+                    JsonNodeFactory.instance.objectNode()
+                            .put("_key", "k-" + i)
+                            .put("foo", "bar-" + i)
             )).get();
         }
         producer.flush();
@@ -129,6 +132,9 @@ public class WriteIT {
         await("Request received by ADB")
                 .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(100))
                 .until(() -> col.count().getCount() >= 1_000L);
+
+        BaseDocument doc0 = col.getDocument("k-0", BaseDocument.class);
+        assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
 
         connectClient.deleteConnector(CONNECTOR_NAME);
         assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);

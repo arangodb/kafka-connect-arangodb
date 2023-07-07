@@ -18,7 +18,7 @@
 
 package com.arangodb;
 
-import com.arangodb.entity.BaseDocument;
+import com.arangodb.kafka.conversion.ValueConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -30,6 +30,7 @@ import java.util.Map;
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
     private String taskId;
+    private ValueConverter converter;
     private ArangoCollection col;
 
     @Override
@@ -43,6 +44,7 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("starting task: {}", taskId);
         LOG.info("task config: {}", props);
 
+        converter = new ValueConverter();
         col = new ArangoDB.Builder()
                 .host(props.get("arango.host"), Integer.parseInt(props.get("arango.port")))
                 .password(props.get("arango.password"))
@@ -61,7 +63,7 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("writing {} record(s)", records.size());
         for (SinkRecord record : records) {
             LOG.info("rcv msg: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            col.insertDocument(new BaseDocument());
+            col.insertDocument(converter.convert(record));
         }
         LOG.info(col.db().getVersion().getVersion());
     }
