@@ -18,10 +18,8 @@
 
 package com.arangodb.kafka.conversion;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.kafka.common.errors.SerializationException;
-import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.data.ConnectSchema;
+import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.json.JsonConverterConfig;
@@ -32,12 +30,12 @@ import org.apache.kafka.connect.storage.ConverterType;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ValueConverter {
+public class KeyConverter {
 
     private final JsonDeserializer deserializer;
     private final JsonConverter jsonConverter;
 
-    public ValueConverter() {
+    public KeyConverter() {
         deserializer = new JsonDeserializer();
         jsonConverter = new JsonConverter();
         Map<String, Object> converterConfig = new HashMap<>();
@@ -46,25 +44,39 @@ public class ValueConverter {
         jsonConverter.configure(converterConfig);
     }
 
-    public ObjectNode convert(SinkRecord record) {
-        Object value = record.value();
-        if (!(value instanceof Map) && !(value instanceof Struct)) {
-            throw new DataException("Unsupported record value format: " + record.value().getClass());
+    public String convert(SinkRecord record) {
+        Object key = record.key();
+        if (key == null) {
+            return String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+        }
+        if (String.valueOf(key).isEmpty()) {
+            throw new DataException("Key is used as document id and can not be empty.");
         }
 
-        JsonNode tree;
-        try {
-            byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
-            tree = deserializer.deserialize(record.topic(), bytes);
-        } catch (SerializationException e) {
-            throw new DataException(e);
+        Schema keySchema = record.keySchema();
+        Schema.Type schemaType;
+        if (keySchema == null) {
+            schemaType = ConnectSchema.schemaType(key.getClass());
+            if (schemaType == null) {
+                throw new DataException(
+                        "Java class " + key.getClass() + " does not have corresponding schema type."
+                );
+            }
+        } else {
+            schemaType = keySchema.type();
         }
 
-        if (!(tree instanceof ObjectNode)) {
-            throw new DataException("Record value cannot be read as JSON object");
+        switch (schemaType) {
+            case INT8:
+            case INT16:
+            case INT32:
+            case INT64:
+            case STRING:
+                return String.valueOf(key);
+            default:
+                throw new DataException(schemaType.name() + " is not supported as the document id.");
         }
 
-        return (ObjectNode) tree;
     }
 
 }
