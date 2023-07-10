@@ -20,11 +20,13 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
+import com.arangodb.config.HostDescription;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.utils.AvroTarget;
 import com.arangodb.kafka.utils.JsonTarget;
 import com.arangodb.kafka.utils.StringTarget;
 import com.arangodb.kafka.utils.TestTarget;
+import deployment.ArangoDbDeployment;
 import deployment.KafkaConnectDeployment;
 import deployment.KafkaConnectOperations;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -75,8 +77,9 @@ public class ConverterIT {
 
     @BeforeEach
     void setUp() throws ExecutionException, InterruptedException {
+        HostDescription adbHost = ArangoDbDeployment.getHost();
         col = new ArangoDB.Builder()
-                .host(ADB_HOST, ADB_PORT)
+                .host(adbHost.getHost(), adbHost.getPort())
                 .password("test")
                 .build()
                 .db("_system")

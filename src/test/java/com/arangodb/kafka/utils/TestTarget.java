@@ -18,6 +18,7 @@
 
 package com.arangodb.kafka.utils;
 
+import deployment.ArangoDbDeployment;
 import deployment.KafkaConnectDeployment;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -55,8 +56,7 @@ public abstract class TestTarget {
         cfg.put(SinkConnectorConfig.TASKS_MAX_CONFIG, "2");
         cfg.put("key.converter.schemas.enable", "false");
         cfg.put("value.converter.schemas.enable", "false");
-        cfg.put("arango.host", ADB_HOST);
-        cfg.put("arango.port", String.valueOf(ADB_PORT));
+        cfg.put("arango.endpoints", ArangoDbDeployment.getEndpoints());
         cfg.put("arango.user", "root");
         cfg.put("arango.password", "test");
         cfg.put("arango.database", "_system");

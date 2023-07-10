@@ -18,19 +18,27 @@
 
 package deployment;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 
 enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
     INSTANCE;
 
-    private final String kafkaBootstrapServers;
+    private static final Logger LOG;
+    private static final String kafkaBootstrapServers;
+    private static final String kafkaConnectHost;
 
-    ClusterKafkaConnectDeployment() {
+    static {
+        LOG = LoggerFactory.getLogger(ClusterKafkaConnectDeployment.class);
         kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
+        LOG.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
         Objects.requireNonNull(kafkaBootstrapServers);
         assert !kafkaBootstrapServers.isEmpty();
 
-        String kafkaConnectHost = KafkaConnectDeployment.getKafkaConnectHost();
+        kafkaConnectHost = KafkaConnectDeployment.getKafkaConnectHost();
+        LOG.info("Using kafka.connect.host: {}", kafkaConnectHost);
         Objects.requireNonNull(kafkaConnectHost);
         assert !kafkaConnectHost.isEmpty();
     }
@@ -52,7 +60,7 @@ enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
 
     @Override
     public KafkaConnectOperations client() {
-        return new KafkaConnectTemplate(KafkaConnectDeployment.getKafkaConnectHost());
+        return new KafkaConnectTemplate(kafkaConnectHost);
     }
 
 }
