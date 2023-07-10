@@ -85,6 +85,8 @@ public class ArangoSinkTask extends SinkTask {
     @Override
     public void stop() {
         LOG.info("stopping task: {}", taskId);
-        col.db().arango().shutdown();
+        if (col != null) {
+            col.db().arango().shutdown();
+        }
     }
 }

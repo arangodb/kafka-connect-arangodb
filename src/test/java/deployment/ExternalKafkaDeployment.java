@@ -26,13 +26,13 @@ import java.util.Objects;
 enum ExternalKafkaDeployment implements KafkaDeployment {
     INSTANCE;
 
-    private static final Logger LOG;
-    private static final String kafkaBootstrapServers;
+    private final String kafkaBootstrapServers;
 
-    static {
-        LOG = LoggerFactory.getLogger(ExternalKafkaDeployment.class);
+    ExternalKafkaDeployment() {
+        Logger log = LoggerFactory.getLogger(ExternalKafkaDeployment.class);
+
         kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
-        LOG.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
+        log.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
         Objects.requireNonNull(kafkaBootstrapServers, "Required system property: kafka.bootstrap.servers");
         assert !kafkaBootstrapServers.isEmpty();
     }

@@ -26,19 +26,19 @@ import java.util.Objects;
 enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
     INSTANCE;
 
-    private static final Logger LOG;
-    private static final String kafkaBootstrapServers;
-    private static final String kafkaConnectHost;
+    private final String kafkaBootstrapServers;
+    private final String kafkaConnectHost;
 
-    static {
-        LOG = LoggerFactory.getLogger(ClusterKafkaConnectDeployment.class);
+    ClusterKafkaConnectDeployment() {
+        Logger log = LoggerFactory.getLogger(ClusterKafkaConnectDeployment.class);
+
         kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
-        LOG.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
+        log.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
         Objects.requireNonNull(kafkaBootstrapServers);
         assert !kafkaBootstrapServers.isEmpty();
 
         kafkaConnectHost = KafkaConnectDeployment.getKafkaConnectHost();
-        LOG.info("Using kafka.connect.host: {}", kafkaConnectHost);
+        log.info("Using kafka.connect.host: {}", kafkaConnectHost);
         Objects.requireNonNull(kafkaConnectHost);
         assert !kafkaConnectHost.isEmpty();
     }
