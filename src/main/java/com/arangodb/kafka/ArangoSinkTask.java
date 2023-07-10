@@ -20,6 +20,7 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
+import com.arangodb.Protocol;
 import com.arangodb.kafka.conversion.ValueConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -50,6 +51,7 @@ public class ArangoSinkTask extends SinkTask {
         col = new ArangoDB.Builder()
                 .host(props.get("arango.host"), Integer.parseInt(props.get("arango.port")))
                 .password(props.get("arango.password"))
+                .protocol(Protocol.HTTP2_VPACK)
                 .build()
                 .db(props.get("arango.database"))
                 .collection(props.get("arango.collection"));
