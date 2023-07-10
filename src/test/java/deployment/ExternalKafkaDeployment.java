@@ -18,13 +18,21 @@
 
 package deployment;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 
 enum ExternalKafkaDeployment implements KafkaDeployment {
     INSTANCE;
 
+    private final String kafkaBootstrapServers;
+
     ExternalKafkaDeployment() {
-        String kafkaBootstrapServers = getBootstrapServers();
+        Logger log = LoggerFactory.getLogger(ExternalKafkaDeployment.class);
+
+        kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
+        log.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
         Objects.requireNonNull(kafkaBootstrapServers, "Required system property: kafka.bootstrap.servers");
         assert !kafkaBootstrapServers.isEmpty();
     }
@@ -41,7 +49,7 @@ enum ExternalKafkaDeployment implements KafkaDeployment {
 
     @Override
     public String getBootstrapServers() {
-        return KafkaDeployment.getKafkaBootstrapServers();
+        return kafkaBootstrapServers;
     }
 
 }

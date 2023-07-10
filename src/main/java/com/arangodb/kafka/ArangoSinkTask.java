@@ -16,9 +16,13 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb;
+package com.arangodb.kafka;
 
-import com.arangodb.entity.BaseDocument;
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDB;
+import com.arangodb.Protocol;
+import com.arangodb.config.HostDescription;
+import com.arangodb.kafka.conversion.ValueConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -30,6 +34,7 @@ import java.util.Map;
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
     private String taskId;
+    private ValueConverter converter;
     private ArangoCollection col;
 
     @Override
@@ -43,13 +48,24 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("starting task: {}", taskId);
         LOG.info("task config: {}", props);
 
-        col = new ArangoDB.Builder()
-                .host(props.get("arango.host"), Integer.parseInt(props.get("arango.port")))
-                .password(props.get("arango.password"))
-                .build()
+        converter = new ValueConverter();
+        col = buildAdb(props)
                 .db(props.get("arango.database"))
                 .collection(props.get("arango.collection"));
 
+    }
+
+    private ArangoDB buildAdb(Map<String, String> props) {
+        ArangoDB.Builder builder = new ArangoDB.Builder()
+                .password(props.get("arango.password"))
+                .protocol(Protocol.HTTP2_VPACK);
+
+        for (String ep : props.get("arango.endpoints").split(",")) {
+            HostDescription host = HostDescription.parse(ep);
+            builder.host(host.getHost(), host.getPort());
+        }
+
+        return builder.build();
     }
 
     @Override
@@ -61,7 +77,7 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("writing {} record(s)", records.size());
         for (SinkRecord record : records) {
             LOG.info("rcv msg: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            col.insertDocument(new BaseDocument());
+            col.insertDocument(converter.convert(record));
         }
         LOG.info(col.db().getVersion().getVersion());
     }
@@ -69,6 +85,8 @@ public class ArangoSinkTask extends SinkTask {
     @Override
     public void stop() {
         LOG.info("stopping task: {}", taskId);
-        col.db().arango().shutdown();
+        if (col != null) {
+            col.db().arango().shutdown();
+        }
     }
 }

@@ -38,6 +38,8 @@ jobs:
         run: ./docker/create_network.sh
       - name: Start Kafka
         run: ./docker/start_kafka.sh
+      - name: Start Schema Registry
+        run: ./docker/start_schema_registry.sh
       - name: Start Database
         run: ./docker/start_db.sh
       - name: Start Kafka Connect
