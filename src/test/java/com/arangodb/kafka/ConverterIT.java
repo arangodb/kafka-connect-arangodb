@@ -38,10 +38,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
@@ -92,7 +89,10 @@ public class ConverterIT {
         Properties adminClientConfig = new Properties();
         adminClientConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConnect.getBootstrapServers());
         adminClient = AdminClient.create(adminClientConfig);
-        adminClient.deleteTopics(Collections.singletonList(TOPIC_NAME)).all().get();
+        Set<String> topics = adminClient.listTopics().names().get();
+        if (topics.contains(TOPIC_NAME)) {
+            adminClient.deleteTopics(Collections.singletonList(TOPIC_NAME)).all().get();
+        }
         adminClient.createTopics(Collections.singletonList(new NewTopic(TOPIC_NAME, 2, (short) 1))).all().get();
     }
 
