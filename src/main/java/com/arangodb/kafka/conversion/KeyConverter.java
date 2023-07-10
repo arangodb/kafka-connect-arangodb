@@ -26,12 +26,14 @@ import org.apache.kafka.connect.json.JsonConverterConfig;
 import org.apache.kafka.connect.json.JsonDeserializer;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.storage.ConverterType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class KeyConverter {
-
+    private final static Logger LOG = LoggerFactory.getLogger(KeyConverter.class);
     private final JsonDeserializer deserializer;
     private final JsonConverter jsonConverter;
 
@@ -47,7 +49,9 @@ public class KeyConverter {
     public String convert(SinkRecord record) {
         Object key = record.key();
         if (key == null) {
-            return String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+            String newKey = String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+            LOG.debug("Assigning _key: {}", newKey);
+            return newKey;
         }
         if (String.valueOf(key).isEmpty()) {
             throw new DataException("Key is used as document id and can not be empty.");

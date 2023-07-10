@@ -36,6 +36,7 @@ public class ValueConverter {
 
     private final JsonDeserializer deserializer;
     private final JsonConverter jsonConverter;
+    private final KeyConverter keyConverter;
 
     public ValueConverter() {
         deserializer = new JsonDeserializer();
@@ -44,6 +45,7 @@ public class ValueConverter {
         converterConfig.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);
         converterConfig.put(JsonConverterConfig.TYPE_CONFIG, ConverterType.VALUE.getName());
         jsonConverter.configure(converterConfig);
+        keyConverter = new KeyConverter();
     }
 
     public ObjectNode convert(SinkRecord record) {
@@ -64,7 +66,13 @@ public class ValueConverter {
             throw new DataException("Record value cannot be read as JSON object");
         }
 
-        return (ObjectNode) tree;
+        ObjectNode data = (ObjectNode) tree;
+        if (!data.hasNonNull("_key")) {
+            String key = keyConverter.convert(record);
+            data.put("_key", key);
+        }
+
+        return data;
     }
 
 }
