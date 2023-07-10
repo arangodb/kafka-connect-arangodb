@@ -16,8 +16,10 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb;
+package com.arangodb.kafka;
 
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDB;
 import com.arangodb.kafka.conversion.ValueConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;

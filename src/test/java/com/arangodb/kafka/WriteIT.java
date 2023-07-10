@@ -16,8 +16,10 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb;
+package com.arangodb.kafka;
 
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDB;
 import com.arangodb.entity.BaseDocument;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
