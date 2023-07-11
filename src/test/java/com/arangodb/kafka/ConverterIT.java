@@ -47,13 +47,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 
-public class ConverterIT {
+class ConverterIT {
     private static final KafkaConnectDeployment kafkaConnect = KafkaConnectDeployment.getInstance();
     private static KafkaConnectOperations connectClient;
     private ArangoCollection col;
     private AdminClient adminClient;
 
-    public static Stream<Arguments> targets() {
+    static Stream<Arguments> targets() {
         return Stream.of(
                 Arguments.of(new JsonTarget()),
                 Arguments.of(new AvroTarget()),

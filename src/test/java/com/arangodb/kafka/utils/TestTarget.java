@@ -18,6 +18,7 @@
 
 package com.arangodb.kafka.utils;
 
+import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.deployment.ArangoDbDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -54,11 +55,11 @@ public abstract class TestTarget {
         cfg.put(SinkConnectorConfig.TASKS_MAX_CONFIG, "2");
         cfg.put("key.converter.schemas.enable", "false");
         cfg.put("value.converter.schemas.enable", "false");
-        cfg.put("arango.endpoints", ArangoDbDeployment.getEndpoints());
-        cfg.put("arango.user", "root");
-        cfg.put("arango.password", "test");
-        cfg.put("arango.database", "_system");
-        cfg.put("arango.collection", Config.COLLECTION_NAME);
+        cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints());
+        cfg.put(ArangoSinkConfig.CONNECTION_USER, "root");
+        cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
+        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, "_system");
+        cfg.put(ArangoSinkConfig.CONNECTION_COLLECTION, Config.COLLECTION_NAME);
         return cfg;
     }
 
