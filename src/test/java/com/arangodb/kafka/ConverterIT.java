@@ -22,13 +22,13 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
 import com.arangodb.config.HostDescription;
 import com.arangodb.entity.BaseDocument;
+import com.arangodb.kafka.deployment.ArangoDbDeployment;
+import com.arangodb.kafka.deployment.KafkaConnectDeployment;
+import com.arangodb.kafka.deployment.KafkaConnectOperations;
 import com.arangodb.kafka.utils.AvroTarget;
 import com.arangodb.kafka.utils.JsonTarget;
 import com.arangodb.kafka.utils.StringTarget;
 import com.arangodb.kafka.utils.TestTarget;
-import deployment.ArangoDbDeployment;
-import deployment.KafkaConnectDeployment;
-import deployment.KafkaConnectOperations;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -47,13 +47,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 
-public class ConverterIT {
+class ConverterIT {
     private static final KafkaConnectDeployment kafkaConnect = KafkaConnectDeployment.getInstance();
     private static KafkaConnectOperations connectClient;
     private ArangoCollection col;
     private AdminClient adminClient;
 
-    public static Stream<Arguments> targets() {
+    static Stream<Arguments> targets() {
         return Stream.of(
                 Arguments.of(new JsonTarget()),
                 Arguments.of(new AvroTarget()),
@@ -104,7 +104,7 @@ public class ConverterIT {
     @Timeout(30)
     @ParameterizedTest
     @MethodSource("targets")
-    void testBasicDelivery(TestTarget target) {
+    void testConversion(TestTarget target) {
         connectClient.createConnector(target.config());
         assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
 
@@ -135,7 +135,7 @@ public class ConverterIT {
     @Timeout(30)
     @ParameterizedTest
     @MethodSource("targets")
-    void testBasicDeliveryWithKeyData(TestTarget target) {
+    void testConversionWithKeyData(TestTarget target) {
         connectClient.createConnector(target.config());
         assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
 
@@ -164,7 +164,7 @@ public class ConverterIT {
     @Timeout(30)
     @ParameterizedTest
     @MethodSource("targets")
-    void testBasicDeliveryWithRecordId(TestTarget target) {
+    void testConversionWithRecordId(TestTarget target) {
         connectClient.createConnector(target.config());
         assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
 

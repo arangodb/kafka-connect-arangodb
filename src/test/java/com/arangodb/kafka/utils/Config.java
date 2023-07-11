@@ -22,8 +22,8 @@ import com.arangodb.kafka.ArangoSinkConnector;
 
 public class Config {
     public static final String SCHEMA_REGISTRY_URL = "http://172.28.11.21:8081";
-    public static final String TOPIC_NAME = "writeIT";
-    public static final String COLLECTION_NAME = "writeIT";
+    public static final String TOPIC_NAME = "converterIT";
+    public static final String COLLECTION_NAME = "converterIT";
     public static final String CONNECTOR_NAME = "my-connector";
     public static final String CONNECTOR_CLASS = ArangoSinkConnector.class.getName();
 

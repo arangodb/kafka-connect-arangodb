@@ -16,7 +16,7 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package deployment;
+package com.arangodb.kafka.deployment;
 
 public interface KafkaConnectDeployment {
 

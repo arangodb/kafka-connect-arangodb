@@ -18,8 +18,9 @@
 
 package com.arangodb.kafka.utils;
 
-import deployment.ArangoDbDeployment;
-import deployment.KafkaConnectDeployment;
+import com.arangodb.kafka.config.ArangoSinkConfig;
+import com.arangodb.kafka.deployment.ArangoDbDeployment;
+import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -27,8 +28,6 @@ import org.apache.kafka.connect.runtime.SinkConnectorConfig;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.arangodb.kafka.utils.Config.*;
 
 
 public abstract class TestTarget {
@@ -50,23 +49,23 @@ public abstract class TestTarget {
 
     public Map<String, String> config() {
         Map<String, String> cfg = new HashMap<>();
-        cfg.put(SinkConnectorConfig.NAME_CONFIG, CONNECTOR_NAME);
-        cfg.put(SinkConnectorConfig.CONNECTOR_CLASS_CONFIG, CONNECTOR_CLASS);
-        cfg.put(SinkConnectorConfig.TOPICS_CONFIG, TOPIC_NAME);
+        cfg.put(SinkConnectorConfig.NAME_CONFIG, Config.CONNECTOR_NAME);
+        cfg.put(SinkConnectorConfig.CONNECTOR_CLASS_CONFIG, Config.CONNECTOR_CLASS);
+        cfg.put(SinkConnectorConfig.TOPICS_CONFIG, Config.TOPIC_NAME);
         cfg.put(SinkConnectorConfig.TASKS_MAX_CONFIG, "2");
         cfg.put("key.converter.schemas.enable", "false");
         cfg.put("value.converter.schemas.enable", "false");
-        cfg.put("arango.endpoints", ArangoDbDeployment.getEndpoints());
-        cfg.put("arango.user", "root");
-        cfg.put("arango.password", "test");
-        cfg.put("arango.database", "_system");
-        cfg.put("arango.collection", COLLECTION_NAME);
+        cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints());
+        cfg.put(ArangoSinkConfig.CONNECTION_USER, "root");
+        cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
+        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, "_system");
+        cfg.put(ArangoSinkConfig.CONNECTION_COLLECTION, Config.COLLECTION_NAME);
         return cfg;
     }
 
     public void produce(String key, Map<String, Object> value) {
         Object data = serializeRecordValue(value);
-        producer.send(new ProducerRecord<>(TOPIC_NAME, key, data));
+        producer.send(new ProducerRecord<>(Config.TOPIC_NAME, key, data));
     }
 
     public void flush() {

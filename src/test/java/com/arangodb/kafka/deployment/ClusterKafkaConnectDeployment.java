@@ -16,25 +16,31 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package deployment;
+package com.arangodb.kafka.deployment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
-enum ExternalKafkaDeployment implements KafkaDeployment {
+enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
     INSTANCE;
 
     private final String kafkaBootstrapServers;
+    private final String kafkaConnectHost;
 
-    ExternalKafkaDeployment() {
-        Logger log = LoggerFactory.getLogger(ExternalKafkaDeployment.class);
+    ClusterKafkaConnectDeployment() {
+        Logger log = LoggerFactory.getLogger(ClusterKafkaConnectDeployment.class);
 
         kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
         log.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
-        Objects.requireNonNull(kafkaBootstrapServers, "Required system property: kafka.bootstrap.servers");
+        Objects.requireNonNull(kafkaBootstrapServers);
         assert !kafkaBootstrapServers.isEmpty();
+
+        kafkaConnectHost = KafkaConnectDeployment.getKafkaConnectHost();
+        log.info("Using kafka.connect.host: {}", kafkaConnectHost);
+        Objects.requireNonNull(kafkaConnectHost);
+        assert !kafkaConnectHost.isEmpty();
     }
 
     @Override
@@ -50,6 +56,11 @@ enum ExternalKafkaDeployment implements KafkaDeployment {
     @Override
     public String getBootstrapServers() {
         return kafkaBootstrapServers;
+    }
+
+    @Override
+    public KafkaConnectOperations client() {
+        return new KafkaConnectTemplate(kafkaConnectHost);
     }
 
 }

@@ -16,21 +16,18 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package deployment;
+package com.arangodb.kafka.deployment;
 
-interface KafkaDeployment {
+import java.util.Collection;
+import java.util.Map;
 
-    static KafkaDeployment getInstance() {
-        return ExternalKafkaDeployment.INSTANCE;
-    }
+public interface KafkaConnectOperations {
+    void createConnector(Map<String, String> config);
 
-    static String getKafkaBootstrapServers() {
-        return System.getProperty("kafka.bootstrap.servers", "172.28.11.1:9092");
-    }
+    String getConnectorState(String name);
 
-    void start();
+    Collection<String> getConnectors();
 
-    void stop();
+    void deleteConnector(String name);
 
-    String getBootstrapServers();
 }

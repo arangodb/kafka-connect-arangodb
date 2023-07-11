@@ -22,6 +22,7 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
 import com.arangodb.Protocol;
 import com.arangodb.config.HostDescription;
+import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.conversion.ValueConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -33,7 +34,7 @@ import java.util.Map;
 
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
-    private String taskId;
+    private ArangoSinkConfig config;
     private ValueConverter converter;
     private ArangoCollection col;
 
@@ -44,27 +45,25 @@ public class ArangoSinkTask extends SinkTask {
 
     @Override
     public void start(Map<String, String> props) {
-        taskId = props.get("taskId");
-        LOG.info("starting task: {}", taskId);
+        LOG.info("Starting ArangoSinkTask.");
         LOG.info("task config: {}", props);
 
-        converter = new ValueConverter();
-        col = buildAdb(props)
-                .db(props.get("arango.database"))
-                .collection(props.get("arango.collection"));
+        config = new ArangoSinkConfig(props);
 
+        converter = new ValueConverter();
+        col = buildAdb()
+                .db(config.getDatabase())
+                .collection(config.getCollection());
     }
 
-    private ArangoDB buildAdb(Map<String, String> props) {
+    private ArangoDB buildAdb() {
         ArangoDB.Builder builder = new ArangoDB.Builder()
-                .password(props.get("arango.password"))
-                .protocol(Protocol.HTTP2_VPACK);
-
-        for (String ep : props.get("arango.endpoints").split(",")) {
-            HostDescription host = HostDescription.parse(ep);
-            builder.host(host.getHost(), host.getPort());
+                .user(config.getUser())
+                .password(config.getPassword().value())
+                .protocol(config.getProtocol());
+        for (HostDescription ep : config.getEndpoints()) {
+            builder.host(ep.getHost(), ep.getPort());
         }
-
         return builder.build();
     }
 
@@ -84,7 +83,7 @@ public class ArangoSinkTask extends SinkTask {
 
     @Override
     public void stop() {
-        LOG.info("stopping task: {}", taskId);
+        LOG.info("Stopping ArangoSinkTask.");
         if (col != null) {
             col.db().arango().shutdown();
         }
