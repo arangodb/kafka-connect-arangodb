@@ -16,7 +16,7 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package deployment;
+package com.arangodb.kafka.deployment;
 
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.connector.policy.AllConnectorClientConfigOverridePolicy;
