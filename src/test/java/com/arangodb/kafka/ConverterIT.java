@@ -25,10 +25,7 @@ import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.deployment.ArangoDbDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.utils.AvroTarget;
-import com.arangodb.kafka.utils.JsonTarget;
-import com.arangodb.kafka.utils.StringTarget;
-import com.arangodb.kafka.utils.TestTarget;
+import com.arangodb.kafka.utils.*;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -57,7 +54,8 @@ class ConverterIT {
         return Stream.of(
                 Arguments.of(new JsonTarget()),
                 Arguments.of(new AvroTarget()),
-                Arguments.of(new StringTarget())
+                Arguments.of(new StringTarget()),
+                Arguments.of(new JsonWithSchemaTarget())
         );
     }
 

@@ -19,6 +19,7 @@
 package com.arangodb.kafka.conversion;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.connect.data.Struct;
@@ -62,8 +63,13 @@ public class ValueConverter {
             throw new DataException(e);
         }
 
-        if (!(tree instanceof ObjectNode)) {
-            throw new DataException("Record value cannot be read as JSON object");
+        if (tree.isNull()) {
+            // TODO: delete
+            throw new UnsupportedOperationException();
+        }
+
+        if (!tree.isObject()) {
+            throw new DataException("Record value cannot be read as JSON object: " + tree.getClass().getName());
         }
 
         ObjectNode data = (ObjectNode) tree;

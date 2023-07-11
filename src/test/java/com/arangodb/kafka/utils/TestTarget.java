@@ -38,6 +38,10 @@ public abstract class TestTarget {
         producer = new KafkaProducer<>(producerConfig());
     }
 
+    Object serializeRecordKey(String key) {
+        return key;
+    }
+
     abstract Object serializeRecordValue(Map<String, Object> data);
 
     Map<String, Object> producerConfig() {
@@ -64,8 +68,9 @@ public abstract class TestTarget {
     }
 
     public void produce(String key, Map<String, Object> value) {
-        Object data = serializeRecordValue(value);
-        producer.send(new ProducerRecord<>(Config.TOPIC_NAME, key, data));
+        Object serKey = serializeRecordKey(key);
+        Object serValue = serializeRecordValue(value);
+        producer.send(new ProducerRecord<>(Config.TOPIC_NAME, serKey, serValue));
     }
 
     public void flush() {

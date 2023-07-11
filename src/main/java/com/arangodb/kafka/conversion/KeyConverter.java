@@ -18,8 +18,8 @@
 
 package com.arangodb.kafka.conversion;
 
-import org.apache.kafka.connect.data.ConnectSchema;
-import org.apache.kafka.connect.data.Schema;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.json.JsonConverterConfig;
@@ -42,45 +42,42 @@ public class KeyConverter {
         jsonConverter = new JsonConverter();
         Map<String, Object> converterConfig = new HashMap<>();
         converterConfig.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);
-        converterConfig.put(JsonConverterConfig.TYPE_CONFIG, ConverterType.VALUE.getName());
+        converterConfig.put(JsonConverterConfig.TYPE_CONFIG, ConverterType.KEY.getName());
         jsonConverter.configure(converterConfig);
     }
 
     public String convert(SinkRecord record) {
-        Object key = record.key();
-        if (key == null) {
-            String newKey = String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            LOG.debug("Assigning _key: {}", newKey);
-            return newKey;
-        }
-        if (String.valueOf(key).isEmpty()) {
-            throw new DataException("Key is used as document id and can not be empty.");
+        if (record.key() == null) {
+            return createKey(record);
         }
 
-        Schema keySchema = record.keySchema();
-        Schema.Type schemaType;
-        if (keySchema == null) {
-            schemaType = ConnectSchema.schemaType(key.getClass());
-            if (schemaType == null) {
-                throw new DataException(
-                        "Java class " + key.getClass() + " does not have corresponding schema type."
-                );
+        JsonNode tree;
+        try {
+            byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.keySchema(), record.key());
+            tree = deserializer.deserialize(record.topic(), bytes);
+        } catch (SerializationException e) {
+            throw new DataException(e);
+        }
+
+        if (tree.isNull()) {
+            return createKey(record);
+        } else if (tree.isTextual()) {
+            String key = tree.textValue();
+            if (key.isEmpty()) {
+                return createKey(record);
             }
+            return key;
+        } else if (tree.isIntegralNumber()) {
+            return String.valueOf(tree.numberValue());
         } else {
-            schemaType = keySchema.type();
+            throw new DataException("Record key cannot be read as string: " + tree.getClass().getName());
         }
+    }
 
-        switch (schemaType) {
-            case INT8:
-            case INT16:
-            case INT32:
-            case INT64:
-            case STRING:
-                return String.valueOf(key);
-            default:
-                throw new DataException(schemaType.name() + " is not supported as the document id.");
-        }
-
+    private String createKey(SinkRecord record) {
+        String newKey = String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+        LOG.debug("Assigning _key: {}", newKey);
+        return newKey;
     }
 
 }
