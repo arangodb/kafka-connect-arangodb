@@ -5,7 +5,8 @@ import com.arangodb.config.HostDescription;
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;

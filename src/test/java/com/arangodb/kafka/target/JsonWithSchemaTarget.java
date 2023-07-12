@@ -16,7 +16,7 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.utils;
+package com.arangodb.kafka.target;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -53,6 +53,10 @@ public class JsonWithSchemaTarget extends TestTarget {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public JsonWithSchemaTarget(String name) {
+        super(name);
+    }
+
     @Override
     Map<String, Object> producerConfig() {
         Map<String, Object> cfg = super.producerConfig();
@@ -62,8 +66,8 @@ public class JsonWithSchemaTarget extends TestTarget {
     }
 
     @Override
-    public Map<String, String> config() {
-        Map<String, String> cfg = super.config();
+    public Map<String, String> getConfig() {
+        Map<String, String> cfg = super.getConfig();
         cfg.put(SinkConnectorConfig.KEY_CONVERTER_CLASS_CONFIG, JsonConverter.class.getName());
         cfg.put(SinkConnectorConfig.VALUE_CONVERTER_CLASS_CONFIG, JsonConverter.class.getName());
         cfg.put("key.converter.schemas.enable", "true");
@@ -91,10 +95,5 @@ public class JsonWithSchemaTarget extends TestTarget {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public String toString() {
-        return "jsonWithSchema";
     }
 }

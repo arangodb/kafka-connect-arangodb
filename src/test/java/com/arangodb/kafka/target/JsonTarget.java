@@ -16,7 +16,7 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.utils;
+package com.arangodb.kafka.target;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +32,10 @@ import java.util.Map;
 public class JsonTarget extends TestTarget {
     private final ObjectMapper mapper = new ObjectMapper();
 
+    public JsonTarget(String name) {
+        super(name);
+    }
+
     @Override
     Map<String, Object> producerConfig() {
         Map<String, Object> cfg = super.producerConfig();
@@ -41,8 +45,8 @@ public class JsonTarget extends TestTarget {
     }
 
     @Override
-    public Map<String, String> config() {
-        Map<String, String> cfg = super.config();
+    public Map<String, String> getConfig() {
+        Map<String, String> cfg = super.getConfig();
         cfg.put(SinkConnectorConfig.KEY_CONVERTER_CLASS_CONFIG, StringConverter.class.getName());
         cfg.put(SinkConnectorConfig.VALUE_CONVERTER_CLASS_CONFIG, JsonConverter.class.getName());
         return cfg;
@@ -51,10 +55,5 @@ public class JsonTarget extends TestTarget {
     @Override
     Object serializeRecordValue(Map<String, Object> data) {
         return mapper.convertValue(data, JsonNode.class);
-    }
-
-    @Override
-    public String toString() {
-        return "json";
     }
 }

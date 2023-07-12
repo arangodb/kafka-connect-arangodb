@@ -58,3 +58,4 @@ build/
 .flattened-pom.xml
 /docker/jwtHeader
 /docker/jwtSecret
+/src/test/resources/junit-platform.properties

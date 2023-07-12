@@ -16,13 +16,23 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.utils;
+package com.arangodb.kafka.deployment;
 
-import com.arangodb.kafka.ArangoSinkConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Config {
-    public static final String CONNECTOR_CLASS = ArangoSinkConnector.class.getName();
-    public static final String DB_NAME = "_system";
-    public static final int TOPIC_PARTITIONS = 2;
-    public static final short TOPIC_REPLICATION_FACTOR = 1;
+public class SchemaRegistryDeployment {
+    private static final Logger LOG;
+    private final static String schemaRegistryUrl;
+
+    static {
+        LOG = LoggerFactory.getLogger(SchemaRegistryDeployment.class);
+        schemaRegistryUrl = System.getProperty("schema.registry.url", "http://172.28.11.21:8081");
+        LOG.info("Using schema.registry.url: {}", schemaRegistryUrl);
+        assert !schemaRegistryUrl.isEmpty();
+    }
+
+    public static String getSchemaRegistryUrl() {
+        return schemaRegistryUrl;
+    }
 }

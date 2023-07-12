@@ -19,27 +19,21 @@
 package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
-import com.arangodb.ArangoDB;
-import com.arangodb.config.HostDescription;
 import com.arangodb.entity.BaseDocument;
-import com.arangodb.kafka.deployment.ArangoDbDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.utils.*;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.junit.jupiter.api.*;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import com.arangodb.kafka.target.Connector;
+import com.arangodb.kafka.target.Producer;
+import com.arangodb.kafka.utils.KafkaTest;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Timeout;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-import static com.arangodb.kafka.utils.Config.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -47,17 +41,6 @@ import static org.awaitility.Awaitility.await;
 class ConverterIT {
     private static final KafkaConnectDeployment kafkaConnect = KafkaConnectDeployment.getInstance();
     private static KafkaConnectOperations connectClient;
-    private ArangoCollection col;
-    private AdminClient adminClient;
-
-    static Stream<Arguments> targets() {
-        return Stream.of(
-                Arguments.of(new JsonTarget()),
-                Arguments.of(new AvroTarget()),
-                Arguments.of(new StringTarget()),
-                Arguments.of(new JsonWithSchemaTarget())
-        );
-    }
 
     @BeforeAll
     static void setUpAll() {
@@ -70,72 +53,43 @@ class ConverterIT {
         kafkaConnect.stop();
     }
 
-    @BeforeEach
-    void setUp() throws ExecutionException, InterruptedException {
-        HostDescription adbHost = ArangoDbDeployment.getHost();
-        col = new ArangoDB.Builder()
-                .host(adbHost.getHost(), adbHost.getPort())
-                .password("test")
-                .build()
-                .db("_system")
-                .collection(COLLECTION_NAME);
-        if (col.exists()) {
-            col.drop();
-        }
-        col.create();
-
-        Properties adminClientConfig = new Properties();
-        adminClientConfig.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConnect.getBootstrapServers());
-        adminClient = AdminClient.create(adminClientConfig);
-        Set<String> topics = adminClient.listTopics().names().get();
-        if (topics.contains(TOPIC_NAME)) {
-            adminClient.deleteTopics(Collections.singletonList(TOPIC_NAME)).all().get();
-        }
-        adminClient.createTopics(Collections.singletonList(new NewTopic(TOPIC_NAME, 2, (short) 1))).all().get();
-    }
-
-    @AfterEach
-    void tearDown() {
-        adminClient.close();
-    }
-
     @Timeout(30)
-    @ParameterizedTest
-    @MethodSource("targets")
-    void testConversion(TestTarget target) {
-        connectClient.createConnector(target.config());
-        assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
+    @KafkaTest
+    void testConversion(ArangoCollection col, Connector connector, Producer producer) {
+        String name = connector.getName();
+
+        connectClient.createConnector(connector.getConfig());
+        assertThat(connectClient.getConnectors()).contains(name);
 
         assertThat(col.count().getCount()).isEqualTo(0L);
 
         for (int i = 0; i < 10; i++) {
             Map<String, Object> data = new HashMap<>();
             data.put("foo", "bar-" + i);
-            target.produce(null, data);
+            producer.produce(null, data);
         }
-        target.flush();
 
         await("Request received by ADB")
                 .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(500))
                 .until(() -> col.count().getCount() >= 10L);
 
-        Iterable<BaseDocument> docs = col.db().query("FOR d IN @@col RETURN d", BaseDocument.class, Collections.singletonMap("@col", COLLECTION_NAME));
+        Iterable<BaseDocument> docs = col.db().query("FOR d IN @@col RETURN d", BaseDocument.class, Collections.singletonMap("@col", name));
         assertThat(docs).allSatisfy(doc -> {
-            assertThat(doc.getKey()).startsWith(TOPIC_NAME);
+            assertThat(doc.getKey()).startsWith(name);
             assertThat(doc.getAttribute("foo")).asString().startsWith("bar");
         });
 
-        connectClient.deleteConnector(CONNECTOR_NAME);
-        assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);
-        target.close();
+        connectClient.deleteConnector(name);
+        assertThat(connectClient.getConnectors()).doesNotContain(name);
     }
 
     @Timeout(30)
-    @ParameterizedTest
-    @MethodSource("targets")
-    void testConversionWithKeyData(TestTarget target) {
-        connectClient.createConnector(target.config());
-        assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
+    @KafkaTest
+    void testConversionWithKeyData(ArangoCollection col, Connector connector, Producer producer) {
+        String name = connector.getName();
+
+        connectClient.createConnector(connector.getConfig());
+        assertThat(connectClient.getConnectors()).contains(name);
 
         assertThat(col.count().getCount()).isEqualTo(0L);
 
@@ -143,9 +97,8 @@ class ConverterIT {
             Map<String, Object> data = new HashMap<>();
             data.put("_key", "k-" + i);
             data.put("foo", "bar-" + i);
-            target.produce(null, data);
+            producer.produce(null, data);
         }
-        target.flush();
 
         await("Request received by ADB")
                 .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(500))
@@ -154,17 +107,17 @@ class ConverterIT {
         BaseDocument doc0 = col.getDocument("k-0", BaseDocument.class);
         assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
 
-        connectClient.deleteConnector(CONNECTOR_NAME);
-        assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);
-        target.close();
+        connectClient.deleteConnector(name);
+        assertThat(connectClient.getConnectors()).doesNotContain(name);
     }
 
     @Timeout(30)
-    @ParameterizedTest
-    @MethodSource("targets")
-    void testConversionWithRecordId(TestTarget target) {
-        connectClient.createConnector(target.config());
-        assertThat(connectClient.getConnectors()).contains(CONNECTOR_NAME);
+    @KafkaTest
+    void testConversionWithRecordId(ArangoCollection col, Connector connector, Producer producer) {
+        String name = connector.getName();
+
+        connectClient.createConnector(connector.getConfig());
+        assertThat(connectClient.getConnectors()).contains(name);
 
         assertThat(col.count().getCount()).isEqualTo(0L);
 
@@ -172,9 +125,8 @@ class ConverterIT {
             String key = "id-" + i;
             Map<String, Object> data = new HashMap<>();
             data.put("foo", "bar-" + i);
-            target.produce(key, data);
+            producer.produce(key, data);
         }
-        target.flush();
 
         await("Request received by ADB")
                 .atMost(Duration.ofSeconds(15)).pollInterval(Duration.ofMillis(500))
@@ -183,9 +135,8 @@ class ConverterIT {
         BaseDocument doc0 = col.getDocument("id-0", BaseDocument.class);
         assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
 
-        connectClient.deleteConnector(CONNECTOR_NAME);
-        assertThat(connectClient.getConnectors()).doesNotContain(CONNECTOR_NAME);
-        target.close();
+        connectClient.deleteConnector(name);
+        assertThat(connectClient.getConnectors()).doesNotContain(name);
     }
 
 }

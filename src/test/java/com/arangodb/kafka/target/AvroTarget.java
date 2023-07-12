@@ -16,15 +16,14 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.utils;
+package com.arangodb.kafka.target;
 
+import com.arangodb.kafka.deployment.SchemaRegistryDeployment;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
 import java.util.Map;
-
-import static com.arangodb.kafka.utils.Config.SCHEMA_REGISTRY_URL;
 
 public class AvroTarget extends TestTarget {
     private static final Schema VALUE_RECORD_SCHEMA = new Schema.Parser()
@@ -37,21 +36,25 @@ public class AvroTarget extends TestTarget {
                     + "  ]"
                     + "}");
 
+    public AvroTarget(String name) {
+        super(name);
+    }
+
     @Override
     Map<String, Object> producerConfig() {
         Map<String, Object> cfg = super.producerConfig();
         cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
-        cfg.put("schema.registry.url", SCHEMA_REGISTRY_URL);
+        cfg.put("schema.registry.url", SchemaRegistryDeployment.getSchemaRegistryUrl());
         return cfg;
     }
 
     @Override
-    public Map<String, String> config() {
-        Map<String, String> cfg = super.config();
+    public Map<String, String> getConfig() {
+        Map<String, String> cfg = super.getConfig();
         cfg.put("key.converter", "org.apache.kafka.connect.storage.StringConverter");
         cfg.put("value.converter", "io.confluent.connect.avro.AvroConverter");
-        cfg.put("value.converter.schema.registry.url", SCHEMA_REGISTRY_URL);
+        cfg.put("value.converter.schema.registry.url", SchemaRegistryDeployment.getSchemaRegistryUrl());
         return cfg;
     }
 
@@ -62,8 +65,4 @@ public class AvroTarget extends TestTarget {
         return value;
     }
 
-    @Override
-    public String toString() {
-        return "avro";
-    }
 }
