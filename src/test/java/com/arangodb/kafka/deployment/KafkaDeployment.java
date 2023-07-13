@@ -25,7 +25,7 @@ interface KafkaDeployment {
     }
 
     static String getKafkaBootstrapServers() {
-        return System.getProperty("kafka.bootstrap.servers", "172.28.11.1:9092");
+        return System.getProperty("kafka.bootstrap.servers", "172.28.11.1:9092,172.28.11.2:9092,172.28.11.3:9092");
     }
 
     void start();
