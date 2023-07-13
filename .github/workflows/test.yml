@@ -9,9 +9,15 @@ on:
       - 'docker/**'
       - 'ChangeLog.md'
       - 'README.md'
+      - '.github/**'
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - 'docker/**'
+      - 'ChangeLog.md'
+      - 'README.md'
+      - '.github/**'
 
 jobs:
   standalone:
