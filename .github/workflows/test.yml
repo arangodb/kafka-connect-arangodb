@@ -17,7 +17,7 @@ jobs:
   standalone:
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    name: ${{matrix.topology}}, ${{matrix.java-version}}
+    name: standalone [${{matrix.topology}}, ${{matrix.java-version}}]
 
     strategy:
       fail-fast: false
@@ -54,7 +54,7 @@ jobs:
   cluster:
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    name: ${{matrix.topology}}, ${{matrix.java-version}}
+    name: cluster [${{matrix.topology}}, ${{matrix.java-version}}]
     env:
       KAFKA_CONNECT_HOST: "http://172.28.11.11:8083"
 
