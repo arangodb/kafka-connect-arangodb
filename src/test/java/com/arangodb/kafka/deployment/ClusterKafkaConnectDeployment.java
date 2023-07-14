@@ -44,16 +44,6 @@ enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
     }
 
     @Override
-    public void start() {
-        // no-op
-    }
-
-    @Override
-    public void stop() {
-        // no-op
-    }
-
-    @Override
     public String getBootstrapServers() {
         return kafkaBootstrapServers;
     }

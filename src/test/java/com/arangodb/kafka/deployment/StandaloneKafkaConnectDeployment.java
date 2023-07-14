@@ -36,12 +36,8 @@ enum StandaloneKafkaConnectDeployment implements KafkaConnectDeployment {
     INSTANCE;
 
     private final KafkaDeployment kafka = KafkaDeployment.getInstance();
-    private Connect connect;
 
-    @Override
-    public void start() {
-        kafka.start();
-
+    StandaloneKafkaConnectDeployment() {
         Map<String, String> workerProps = new HashMap<>();
         workerProps.put("bootstrap.servers", kafka.getBootstrapServers());
         workerProps.put("plugin.path", "target/classes");
@@ -68,15 +64,7 @@ enum StandaloneKafkaConnectDeployment implements KafkaConnectDeployment {
         RestServer rest = new RestServer(config, null);
         rest.initializeServer();
 
-        connect = new Connect(herder, rest);
-        connect.start();
-    }
-
-    @Override
-    public void stop() {
-        connect.stop();
-        kafka.stop();
-        connect.awaitStop();
+        new Connect(herder, rest).start();
     }
 
     @Override

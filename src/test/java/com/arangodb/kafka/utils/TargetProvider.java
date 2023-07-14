@@ -1,8 +1,11 @@
 package com.arangodb.kafka.utils;
 
 import com.arangodb.ArangoCollection;
+import com.arangodb.kafka.deployment.KafkaConnectDeployment;
+import com.arangodb.kafka.deployment.KafkaConnectOperations;
 import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
+import com.arangodb.kafka.target.TargetHolder;
 import com.arangodb.kafka.target.TestTarget;
 import org.junit.jupiter.api.extension.*;
 
@@ -14,6 +17,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class TargetProvider implements TestTemplateInvocationContextProvider {
+    private static final KafkaConnectOperations connectClient = KafkaConnectDeployment.getInstance().client();
+
     private static TestTarget instantiate(Class<? extends TestTarget> clazz, String testNamePrefix) {
         try {
             Constructor<? extends TestTarget> constructor = clazz.getConstructor(String.class);
@@ -32,10 +37,12 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
 
     @Override
     public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(ExtensionContext context) {
-        Class<? extends TestTarget>[] targets = context.getRequiredTestMethod().getAnnotation(KafkaTest.class).value();
-
         String testNamePrefix = context.getRequiredTestClass().getSimpleName() + "-" + context.getRequiredTestMethod().getName() + "-";
-        return Arrays.stream(targets)
+        Class<? extends TestTarget>[] value = context.getRequiredTestMethod().getAnnotation(KafkaTest.class).value();
+        Class<? extends TargetHolder> targetGroup = context.getRequiredTestMethod().getAnnotation(KafkaTest.class).group();
+        Stream<Class<? extends TestTarget>> targets = value.length > 0 ? Arrays.stream(value) :
+                Arrays.stream(targetGroup.getEnumConstants()).map(TargetHolder::getClazz);
+        return targets
                 .map(it -> new TestTemplateInvocationContext() {
 
                     private final TestTarget target = instantiate(it, testNamePrefix);
@@ -51,6 +58,7 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                                 new ParamSupplier<>(ArangoCollection.class, target::getCollection),
                                 new ParamSupplier<>(Connector.class, () -> target),
                                 new ParamSupplier<>(Producer.class, () -> target),
+                                new ParamSupplier<>(KafkaConnectOperations.class, () -> connectClient),
                                 (BeforeTestExecutionCallback) extensionContext -> target.init(),
                                 (AfterTestExecutionCallback) extensionContext -> target.close()
                         );

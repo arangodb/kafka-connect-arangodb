@@ -65,6 +65,11 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         return name;
     }
 
+    @Override
+    public String getTopicName() {
+        return name;
+    }
+
     public ArangoCollection getCollection() {
         return collection;
     }
