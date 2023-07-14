@@ -31,7 +31,7 @@ jobs:
         arango-version:
           - 3.11.1
         topology:
-          - cluster
+          - single
         java-version:
           - 20
 
@@ -70,7 +70,7 @@ jobs:
         arango-version:
           - 3.11.1
         topology:
-          - single
+          - cluster
         java-version:
           - 8
           - 11
