@@ -3,16 +3,28 @@ package com.arangodb.kafka.utils;
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.Target;
 import com.arangodb.kafka.target.TestTarget;
 import org.junit.jupiter.api.extension.*;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class TargetProvider implements TestTemplateInvocationContextProvider {
+    private static TestTarget instantiate(Class<? extends TestTarget> clazz, String testNamePrefix) {
+        try {
+            Constructor<? extends TestTarget> constructor = clazz.getConstructor(String.class);
+            return constructor.newInstance(testNamePrefix + clazz.getSimpleName());
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     @Override
     public boolean supportsTestTemplate(ExtensionContext context) {
         return true;
@@ -20,21 +32,17 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
 
     @Override
     public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(ExtensionContext context) {
-        Target[] targetsArray = context.getRequiredTestMethod().getAnnotation(KafkaTest.class).value();
-        if (targetsArray.length == 0) {
-            targetsArray = Target.values();
-        }
-        List<Target> targets = Arrays.asList(targetsArray);
+        Class<? extends TestTarget>[] targets = context.getRequiredTestMethod().getAnnotation(KafkaTest.class).value();
 
         String testNamePrefix = context.getRequiredTestClass().getSimpleName() + "-" + context.getRequiredTestMethod().getName() + "-";
-        return Arrays.stream(Target.values())
-                .filter(targets::contains)
+        return Arrays.stream(targets)
                 .map(it -> new TestTemplateInvocationContext() {
-                    private final TestTarget target = it.create(testNamePrefix + it.name());
+
+                    private final TestTarget target = instantiate(it, testNamePrefix);
 
                     @Override
                     public String getDisplayName(int invocationIndex) {
-                        return it.name();
+                        return it.getSimpleName();
                     }
 
                     @Override

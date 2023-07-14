@@ -22,8 +22,7 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.target.Connector;
-import com.arangodb.kafka.target.Producer;
+import com.arangodb.kafka.target.*;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +53,11 @@ class ConverterIT {
     }
 
     @Timeout(30)
-    @KafkaTest
+    @KafkaTest({
+            JsonTarget.class,
+            AvroTarget.class,
+            StringTarget.class,
+            JsonWithSchemaTarget.class})
     void testConversion(ArangoCollection col, Connector connector, Producer producer) {
         String name = connector.getName();
 
@@ -84,7 +87,11 @@ class ConverterIT {
     }
 
     @Timeout(30)
-    @KafkaTest
+    @KafkaTest({
+            JsonTarget.class,
+            AvroTarget.class,
+            StringTarget.class,
+            JsonWithSchemaTarget.class})
     void testConversionWithKeyData(ArangoCollection col, Connector connector, Producer producer) {
         String name = connector.getName();
 
@@ -112,7 +119,11 @@ class ConverterIT {
     }
 
     @Timeout(30)
-    @KafkaTest
+    @KafkaTest({
+            JsonTarget.class,
+            AvroTarget.class,
+            StringTarget.class,
+            JsonWithSchemaTarget.class})
     void testConversionWithRecordId(ArangoCollection col, Connector connector, Producer producer) {
         String name = connector.getName();
 

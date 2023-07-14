@@ -1,5 +1,6 @@
 package com.arangodb.kafka.utils;
 
+import com.arangodb.kafka.target.TestTarget;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -13,5 +14,5 @@ import java.lang.annotation.Target;
 @TestTemplate
 @ExtendWith(TargetProvider.class)
 public @interface KafkaTest {
-    com.arangodb.kafka.target.Target[] value() default {};
+    Class<? extends TestTarget>[] value();
 }

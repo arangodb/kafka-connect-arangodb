@@ -6,7 +6,7 @@ import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
 import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.Target;
+import com.arangodb.kafka.target.SslTarget;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,7 +36,7 @@ class SslIT {
         kafkaConnect.stop();
     }
 
-    @KafkaTest(Target.SSL)
+    @KafkaTest(SslTarget.class)
     void foo(ArangoCollection col, Connector connector, Producer producer) {
         String name = connector.getName();
 
