@@ -19,8 +19,6 @@
 package com.arangodb.kafka.target;
 
 import com.arangodb.ArangoCollection;
-import com.arangodb.ArangoDB;
-import com.arangodb.config.HostDescription;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.deployment.ArangoDbDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectDeployment;
@@ -117,13 +115,8 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     private ArangoCollection createCollection() {
-        HostDescription adbHost = ArangoDbDeployment.getHost();
-        ArangoCollection col = new ArangoDB.Builder()
-                .host(adbHost.getHost(), adbHost.getPort())
-                .password("test")
-                .build()
-                .db(Config.DB_NAME)
-                .collection(name);
+        ArangoSinkConfig cfg = new ArangoSinkConfig(getConfig());
+        ArangoCollection col = cfg.createCollection();
         if (col.exists()) {
             col.drop();
         }

@@ -18,6 +18,8 @@
 
 package com.arangodb.kafka.config;
 
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDB;
 import com.arangodb.config.HostDescription;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
@@ -466,29 +468,7 @@ public class ArangoSinkConfig extends AbstractConfig {
         super(CONFIG_DEF, props);
     }
 
-    public List<HostDescription> getEndpoints() {
-        return getList(CONNECTION_ENDPOINTS).stream()
-                .map(HostDescription::parse)
-                .collect(Collectors.toList());
-    }
-
-    public String getUser() {
-        return getString(CONNECTION_USER);
-    }
-
-    public Password getPassword() {
-        return getPassword(CONNECTION_PASSWORD);
-    }
-
-    public String getDatabase() {
-        return getString(CONNECTION_DATABASE);
-    }
-
-    public String getCollection() {
-        return getString(CONNECTION_COLLECTION);
-    }
-
-    public com.arangodb.Protocol getProtocol() {
+    private com.arangodb.Protocol getProtocol() {
         Protocol protocol = Protocol.valueOf(getString(CONNECTION_PROTOCOL).toUpperCase(Locale.ROOT));
         ContentType contentType = ContentType.valueOf(getString(CONNECTION_CONTENT_TYPE).toUpperCase(Locale.ROOT));
         if (Protocol.VST.equals(protocol)) {
@@ -509,11 +489,7 @@ public class ArangoSinkConfig extends AbstractConfig {
         throw new IllegalArgumentException("[" + protocol + ", " + contentType + "]");
     }
 
-    public Boolean getSslEnabled() {
-        return getBoolean(CONNECTION_SSL_ENABLED);
-    }
-
-    public SSLContext createSslContext() {
+    private SSLContext createSslContext() {
         String certValue = getString(CONNECTION_SSL_CERT_VALUE);
         String sslCertType = getString(CONNECTION_SSL_CERT_TYPE);
         String sslKeystoreType = getString(CONNECTION_SSL_KEYSTORE_TYPE);
@@ -541,7 +517,32 @@ public class ArangoSinkConfig extends AbstractConfig {
         }
     }
 
-    public Boolean getHostnameVerification() {
-        return getBoolean(CONNECTION_SSL_HOSTNAME_VERIFICATION);
+    public ArangoCollection createCollection() {
+        Password passwd = getPassword(CONNECTION_PASSWORD);
+        ArangoDB.Builder builder = new ArangoDB.Builder()
+                .user(getString(CONNECTION_USER))
+                .protocol(getProtocol());
+        if (passwd != null) {
+            builder.password(passwd.value());
+        }
+        for (HostDescription ep : getEndpoints()) {
+            builder.host(ep.getHost(), ep.getPort());
+        }
+        if (getBoolean(CONNECTION_SSL_ENABLED)) {
+            builder
+                    .useSsl(true)
+                    .sslContext(createSslContext())
+                    .verifyHost(getBoolean(CONNECTION_SSL_HOSTNAME_VERIFICATION));
+        }
+        return builder.build()
+                .db(getString(CONNECTION_DATABASE))
+                .collection(getString(CONNECTION_COLLECTION));
     }
+
+    List<HostDescription> getEndpoints() {
+        return getList(CONNECTION_ENDPOINTS).stream()
+                .map(HostDescription::parse)
+                .collect(Collectors.toList());
+    }
+
 }
