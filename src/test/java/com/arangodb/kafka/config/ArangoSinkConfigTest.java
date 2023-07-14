@@ -27,6 +27,8 @@ class ArangoSinkConfigTest {
         assertThat(config.getUser()).isEqualTo("root");
         assertThat(config.getProtocol()).isEqualTo(Protocol.HTTP2_JSON);
         assertThat(config.getPassword()).isNull();
+        assertThat(config.getSslEnabled()).isFalse();
+        assertThat(config.getHostnameVerification()).isTrue();
     }
 
     @Test

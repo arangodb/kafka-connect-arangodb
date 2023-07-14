@@ -20,7 +20,6 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
-import com.arangodb.Protocol;
 import com.arangodb.config.HostDescription;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.conversion.ValueConverter;
@@ -63,6 +62,12 @@ public class ArangoSinkTask extends SinkTask {
                 .protocol(config.getProtocol());
         for (HostDescription ep : config.getEndpoints()) {
             builder.host(ep.getHost(), ep.getPort());
+        }
+        if (config.getSslEnabled()) {
+            builder
+                    .useSsl(true)
+                    .sslContext(config.createSslContext())
+                    .verifyHost(config.getHostnameVerification());
         }
         return builder.build();
     }
