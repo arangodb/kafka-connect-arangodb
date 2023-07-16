@@ -29,6 +29,7 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.connect.runtime.SinkConnectorConfig;
 
 import java.io.Closeable;
@@ -136,10 +137,17 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     private void createTopic() throws ExecutionException, InterruptedException {
-        Set<String> topics = adminClient.listTopics().names().get();
-        if (topics.contains(name)) {
-            adminClient.deleteTopics(Collections.singletonList(name)).all().get();
-        }
-        adminClient.createTopics(Collections.singletonList(new NewTopic(name, Config.TOPIC_PARTITIONS, Config.TOPIC_REPLICATION_FACTOR))).all().get();
+        adminClient.createTopics(Collections.singletonList(new NewTopic(name, Config.TOPIC_PARTITIONS, Config.TOPIC_REPLICATION_FACTOR)))
+                .all()
+                .toCompletionStage()
+                .handle((v, e) -> {
+                    if (e == null || e instanceof TopicExistsException) {
+                        return null;
+                    } else {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .toCompletableFuture()
+                .get();
     }
 }
