@@ -23,11 +23,15 @@ import com.arangodb.ArangoDB;
 import com.arangodb.config.HostDescription;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
@@ -121,11 +125,18 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_SSL_PROTOCOL_DOC = "SSLContext protocol.";
     private static final String CONNECTION_SSL_PROTOCOL_DISPLAY = "SSL protocol";
 
-
     public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION = CONNECTION_PREFIX + "ssl.hostname.verification";
     public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = "true";
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC = "SSL hostname verification.";
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY = "SSL hostname verification";
+
+    public static final String CONNECTION_SSL_TRUSTSTORE_LOCATION = CONNECTION_PREFIX + "ssl.truststore.location";
+    private static final String CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC = "The location of the trust store file.";
+    private static final String CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY = "Truststore location";
+
+    public static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD = CONNECTION_PREFIX + "ssl.truststore.password";
+    private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC = "The password for the trust store file.";
+    private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY = "Truststore password";
     //endregion
 
 
@@ -301,6 +312,28 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY
             )
+            .define(
+                    CONNECTION_SSL_TRUSTSTORE_LOCATION,
+                    ConfigDef.Type.STRING,
+                    null,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC,
+                    CONNECTION_GROUP,
+                    16,
+                    ConfigDef.Width.LONG,
+                    CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_TRUSTSTORE_PASSWORD,
+                    ConfigDef.Type.PASSWORD,
+                    null,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC,
+                    CONNECTION_GROUP,
+                    17,
+                    ConfigDef.Width.MEDIUM,
+                    CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY
+            )
 
 
 //            .define(
@@ -466,6 +499,7 @@ public class ArangoSinkConfig extends AbstractConfig {
 
     public ArangoSinkConfig(Map<?, ?> props) {
         super(CONFIG_DEF, props);
+        ensureValidSslConfig();
     }
 
     private com.arangodb.Protocol getProtocol() {
@@ -496,17 +530,23 @@ public class ArangoSinkConfig extends AbstractConfig {
         String sslCertAlias = getString(CONNECTION_SSL_CERT_ALIAS);
         String sslAlgorithm = getString(CONNECTION_SSL_ALGORITHM);
         String sslProtocol = getString(CONNECTION_SSL_PROTOCOL);
+        String trustStoreLocation = getString(CONNECTION_SSL_TRUSTSTORE_LOCATION);
+        Password trustStorePassword = getPassword(CONNECTION_SSL_TRUSTSTORE_PASSWORD);
 
         try {
-            if (certValue == null) {
+            KeyStore ks = KeyStore.getInstance(sslKeystoreType);
+            if (certValue != null) {
+                ByteArrayInputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(certValue));
+                Certificate cert = CertificateFactory.getInstance(sslCertType).generateCertificate(is);
+                ks.load(null);
+                ks.setCertificateEntry(sslCertAlias, cert);
+            } else if (trustStoreLocation != null) {
+                DataInputStream stream = new DataInputStream(Files.newInputStream(Paths.get(trustStoreLocation)));
+                ks.load(stream, trustStorePassword.value().toCharArray());
+            } else {
                 return SSLContext.getDefault();
             }
 
-            ByteArrayInputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(certValue));
-            Certificate cert = CertificateFactory.getInstance(sslCertType).generateCertificate(is);
-            KeyStore ks = KeyStore.getInstance(sslKeystoreType);
-            ks.load(null);
-            ks.setCertificateEntry(sslCertAlias, cert);
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(sslAlgorithm);
             tmf.init(ks);
             SSLContext sc = SSLContext.getInstance(sslProtocol);
@@ -543,6 +583,14 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getList(CONNECTION_ENDPOINTS).stream()
                 .map(HostDescription::parse)
                 .collect(Collectors.toList());
+    }
+
+    private void ensureValidSslConfig() {
+        String certValue = getString(CONNECTION_SSL_CERT_VALUE);
+        String trustStoreLocation = getString(CONNECTION_SSL_TRUSTSTORE_LOCATION);
+        if (certValue != null && trustStoreLocation != null) {
+            throw new ConfigException("Cannot set both " + CONNECTION_SSL_CERT_VALUE + " and " + CONNECTION_SSL_TRUSTSTORE_LOCATION);
+        }
     }
 
 }

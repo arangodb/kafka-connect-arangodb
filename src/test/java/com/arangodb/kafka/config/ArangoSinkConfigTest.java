@@ -65,4 +65,16 @@ class ArangoSinkConfigTest {
                 .hasMessageContaining("AVRO");
     }
 
+    @Test
+    void invalidSslConfig() {
+        HashMap<String, String> props = new HashMap<>(baseProps);
+        props.put(ArangoSinkConfig.CONNECTION_SSL_CERT_VALUE, "abcde");
+        props.put(ArangoSinkConfig.CONNECTION_SSL_TRUSTSTORE_LOCATION, "/tmp");
+        Throwable thrown = catchThrowable(() -> new ArangoSinkConfig(props));
+        assertThat(thrown)
+                .isInstanceOf(ConfigException.class)
+                .hasMessageContaining(ArangoSinkConfig.CONNECTION_SSL_CERT_VALUE)
+                .hasMessageContaining(ArangoSinkConfig.CONNECTION_SSL_TRUSTSTORE_LOCATION);
+    }
+
 }

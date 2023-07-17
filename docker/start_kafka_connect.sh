@@ -9,6 +9,7 @@ docker run -d \
   --name kafka-connect-1 -h kafka-connect-1 \
   --network arangodb --ip "$KAFKA_CONNECT1_IP" \
   -v "$LOCATION"/../target:/usr/share/java/kafka-connect-arangodb \
+  -v "$LOCATION"/../src/test/resources/test.truststore:/tmp/test.truststore \
   -e CONNECT_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
   -e CONNECT_GROUP_ID="kafka-connect" \
   -e CONNECT_CONFIG_STORAGE_TOPIC="kafka-connect.config" \
@@ -30,6 +31,7 @@ docker run -d \
   --name kafka-connect-2 -h kafka-connect-2 \
   --network arangodb --ip "$KAFKA_CONNECT2_IP" \
   -v "$LOCATION"/../target:/usr/share/java/kafka-connect-arangodb \
+  -v "$LOCATION"/../src/test/resources/test.truststore:/tmp/test.truststore \
   -e CONNECT_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
   -e CONNECT_GROUP_ID="kafka-connect" \
   -e CONNECT_CONFIG_STORAGE_TOPIC="kafka-connect.config" \
