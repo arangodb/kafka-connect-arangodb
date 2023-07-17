@@ -21,14 +21,14 @@ package com.arangodb.kafka;
 import com.arangodb.ArangoCollection;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.target.*;
-import com.arangodb.kafka.target.converter.ConvertTargets;
+import com.arangodb.kafka.target.Connector;
+import com.arangodb.kafka.target.Producer;
+import com.arangodb.kafka.target.protocol.ProtocolTargets;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.util.AbstractMap;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 
-class ConverterIT {
+class ProtocolIT {
 
     @BeforeEach
     void setup(KafkaConnectOperations connectClient, Connector connector) {
@@ -49,28 +49,8 @@ class ConverterIT {
         connectClient.deleteConnector(connector.getName());
     }
 
-    @KafkaTest(group = ConvertTargets.class)
-    void testConversion(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
-
-        producer.produce(IntStream.range(0, 10)
-                .mapToObj(i -> new AbstractMap.SimpleEntry<>(null, Collections.singletonMap("foo", "bar-" + i))));
-
-        await().until(() -> col.count().getCount() >= 10L);
-
-        Iterable<BaseDocument> docs = col.db().query(
-                "FOR d IN @@col RETURN d",
-                BaseDocument.class,
-                Collections.singletonMap("@col", col.name())
-        );
-        assertThat(docs).allSatisfy(doc -> {
-            assertThat(doc.getKey()).startsWith(producer.getTopicName());
-            assertThat(doc.getAttribute("foo")).asString().startsWith("bar");
-        });
-    }
-
-    @KafkaTest(group = ConvertTargets.class)
-    void testConversionWithKeyData(ArangoCollection col, Producer producer) {
+    @KafkaTest(group = ProtocolTargets.class)
+    void testWrite(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
 
         producer.produce(IntStream.range(0, 10)
@@ -87,16 +67,4 @@ class ConverterIT {
         assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
     }
 
-    @KafkaTest(group = ConvertTargets.class)
-    void testConversionWithRecordId(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
-
-        producer.produce(IntStream.range(0, 10)
-                .mapToObj(i -> new AbstractMap.SimpleEntry<>("id-" + i, Collections.singletonMap("foo", "bar-" + i))));
-
-        await().until(() -> col.count().getCount() >= 10L);
-
-        BaseDocument doc0 = col.getDocument("id-0", BaseDocument.class);
-        assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
-    }
 }

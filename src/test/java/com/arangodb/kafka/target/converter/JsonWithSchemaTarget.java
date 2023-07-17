@@ -16,8 +16,9 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.target;
+package com.arangodb.kafka.target.converter;
 
+import com.arangodb.kafka.target.TestTarget;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,7 +59,7 @@ public class JsonWithSchemaTarget extends TestTarget {
     }
 
     @Override
-    Map<String, Object> producerConfig() {
+    public Map<String, Object> producerConfig() {
         Map<String, Object> cfg = super.producerConfig();
         cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
@@ -76,7 +77,7 @@ public class JsonWithSchemaTarget extends TestTarget {
     }
 
     @Override
-    Object serializeRecordKey(String key) {
+    public Object serializeRecordKey(String key) {
         try {
             JsonNode payload = mapper.convertValue(key, JsonNode.class);
             ObjectNode res = (ObjectNode) mapper.readTree(keySchema);
@@ -87,7 +88,7 @@ public class JsonWithSchemaTarget extends TestTarget {
     }
 
     @Override
-    Object serializeRecordValue(Map<String, Object> data) {
+    public Object serializeRecordValue(Map<String, Object> data) {
         try {
             JsonNode payload = mapper.convertValue(data, JsonNode.class);
             ObjectNode res = (ObjectNode) mapper.readTree(valueSchema);

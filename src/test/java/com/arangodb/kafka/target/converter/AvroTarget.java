@@ -16,9 +16,10 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.target;
+package com.arangodb.kafka.target.converter;
 
 import com.arangodb.kafka.deployment.SchemaRegistryDeployment;
+import com.arangodb.kafka.target.TestTarget;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -41,7 +42,7 @@ public class AvroTarget extends TestTarget {
     }
 
     @Override
-    Map<String, Object> producerConfig() {
+    public Map<String, Object> producerConfig() {
         Map<String, Object> cfg = super.producerConfig();
         cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
@@ -59,7 +60,7 @@ public class AvroTarget extends TestTarget {
     }
 
     @Override
-    Object serializeRecordValue(Map<String, Object> data) {
+    public Object serializeRecordValue(Map<String, Object> data) {
         GenericData.Record value = new GenericData.Record(VALUE_RECORD_SCHEMA);
         data.forEach(value::put);
         return value;

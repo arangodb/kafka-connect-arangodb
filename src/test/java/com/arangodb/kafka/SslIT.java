@@ -5,8 +5,9 @@ import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
 import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.SslFromFileTarget;
-import com.arangodb.kafka.target.SslTarget;
+import com.arangodb.kafka.target.ssl.SslFromFileTarget;
+import com.arangodb.kafka.target.ssl.SslTarget;
+import com.arangodb.kafka.target.ssl.SslTargets;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +33,7 @@ class SslIT {
         connectClient.deleteConnector(connector.getName());
     }
 
-    @KafkaTest({SslTarget.class, SslFromFileTarget.class})
+    @KafkaTest(group = SslTargets.class)
     void basicDelivery(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
 

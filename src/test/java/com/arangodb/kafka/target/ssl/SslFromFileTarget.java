@@ -16,9 +16,10 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.target;
+package com.arangodb.kafka.target.ssl;
 
 import com.arangodb.kafka.config.ArangoSinkConfig;
+import com.arangodb.kafka.target.converter.JsonTarget;
 
 import java.io.File;
 import java.io.IOException;

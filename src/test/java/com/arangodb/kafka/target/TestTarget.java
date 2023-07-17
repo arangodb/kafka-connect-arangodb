@@ -43,7 +43,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     private ArangoCollection collection;
     private AdminClient adminClient;
 
-    TestTarget(String name) {
+    public TestTarget(String name) {
         this.name = name;
     }
 
@@ -75,13 +75,13 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         return collection;
     }
 
-    Object serializeRecordKey(String key) {
+    public Object serializeRecordKey(String key) {
         return key;
     }
 
-    abstract Object serializeRecordValue(Map<String, Object> data);
+    abstract public Object serializeRecordValue(Map<String, Object> data);
 
-    Map<String, Object> producerConfig() {
+    public Map<String, Object> producerConfig() {
         Map<String, Object> cfg = new HashMap<>();
         cfg.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConnectDeployment.getInstance().getBootstrapServers());
         cfg.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");

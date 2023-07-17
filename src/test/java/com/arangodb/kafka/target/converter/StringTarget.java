@@ -16,31 +16,31 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.target;
+package com.arangodb.kafka.target.converter;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.arangodb.kafka.target.TestTarget;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.connect.json.JsonConverter;
-import org.apache.kafka.connect.json.JsonSerializer;
 import org.apache.kafka.connect.runtime.SinkConnectorConfig;
 import org.apache.kafka.connect.storage.StringConverter;
 
 import java.util.Map;
 
-public class JsonTarget extends TestTarget {
+public class StringTarget extends TestTarget {
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public JsonTarget(String name) {
+    public StringTarget(String name) {
         super(name);
     }
 
     @Override
-    Map<String, Object> producerConfig() {
+    public Map<String, Object> producerConfig() {
         Map<String, Object> cfg = super.producerConfig();
         cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         return cfg;
     }
 
@@ -53,7 +53,11 @@ public class JsonTarget extends TestTarget {
     }
 
     @Override
-    Object serializeRecordValue(Map<String, Object> data) {
-        return mapper.convertValue(data, JsonNode.class);
+    public Object serializeRecordValue(Map<String, Object> data) {
+        try {
+            return mapper.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
