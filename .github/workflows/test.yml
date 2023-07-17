@@ -63,6 +63,7 @@ jobs:
     name: cluster [${{matrix.topology}}, ${{matrix.java-version}}]
     env:
       KAFKA_CONNECT_HOST: "http://172.28.11.11:8083"
+      ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
 
     strategy:
       fail-fast: false
@@ -100,7 +101,7 @@ jobs:
       - name: Start Kafka Connect
         run: ./docker/start_kafka_connect.sh
       - name: Integration Tests
-        run: mvn integration-test -Dkafka.connect.host=${{env.KAFKA_CONNECT_HOST}}
+        run: mvn integration-test -Dkafka.connect.host=${{env.KAFKA_CONNECT_HOST}} -Darango.endpoints=${{env.ARANGO_ENDPOINTS}}
 
   ssl:
     timeout-minutes: 10
