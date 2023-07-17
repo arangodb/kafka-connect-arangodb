@@ -18,11 +18,24 @@
 
 package com.arangodb.kafka.config;
 
+import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDB;
 import com.arangodb.config.HostDescription;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -77,6 +90,53 @@ public class ArangoSinkConfig extends AbstractConfig {
     public static final String CONNECTION_CONTENT_TYPE_DEFAULT = ContentType.JSON.toString();
     private static final String CONNECTION_CONTENT_TYPE_DOC = "Communication content type.";
     private static final String CONNECTION_CONTENT_TYPE_DISPLAY = "Content Type";
+
+    public static final String CONNECTION_SSL_ENABLED = CONNECTION_PREFIX + "ssl.enabled";
+    public static final String CONNECTION_SSL_ENABLED_DEFAULT = "false";
+    private static final String CONNECTION_SSL_ENABLED_DOC = "SSL secured driver connection.";
+    private static final String CONNECTION_SSL_ENABLED_DISPLAY = "SSL enabled";
+
+    public static final String CONNECTION_SSL_CERT_VALUE = CONNECTION_PREFIX + "ssl.cert.value";
+    private static final String CONNECTION_SSL_CERT_VALUE_DOC = "Base64 encoded SSL certificate.";
+    private static final String CONNECTION_SSL_CERT_VALUE_DISPLAY = "SSL certificate";
+
+    public static final String CONNECTION_SSL_CERT_TYPE = CONNECTION_PREFIX + "ssl.cert.type";
+    public static final String CONNECTION_SSL_CERT_TYPE_DEFAULT = "X.509";
+    private static final String CONNECTION_SSL_CERT_TYPE_DOC = "Certificate type.";
+    private static final String CONNECTION_SSL_CERT_TYPE_DISPLAY = "Certificate type";
+
+    public static final String CONNECTION_SSL_CERT_ALIAS = CONNECTION_PREFIX + "ssl.cert.alias";
+    public static final String CONNECTION_SSL_CERT_ALIAS_DEFAULT = "arangodb";
+    private static final String CONNECTION_SSL_CERT_ALIAS_DOC = "Certificate alias name.";
+    private static final String CONNECTION_SSL_CERT_ALIAS_DISPLAY = "Certificate alias";
+
+    public static final String CONNECTION_SSL_ALGORITHM = CONNECTION_PREFIX + "ssl.algorithm";
+    public static final String CONNECTION_SSL_ALGORITHM_DEFAULT = "SunX509";
+    private static final String CONNECTION_SSL_ALGORITHM_DOC = "Trust manager algorithm.";
+    private static final String CONNECTION_SSL_ALGORITHM_DISPLAY = "Trust manager algorithm";
+
+    public static final String CONNECTION_SSL_KEYSTORE_TYPE = CONNECTION_PREFIX + "ssl.keystore.type";
+    public static final String CONNECTION_SSL_KEYSTORE_TYPE_DEFAULT = "jks";
+    private static final String CONNECTION_SSL_KEYSTORE_TYPE_DOC = "Keystore type.";
+    private static final String CONNECTION_SSL_KEYSTORE_TYPE_DISPLAY = "Keystore type";
+
+    public static final String CONNECTION_SSL_PROTOCOL = CONNECTION_PREFIX + "ssl.protocol";
+    public static final String CONNECTION_SSL_PROTOCOL_DEFAULT = "TLS";
+    private static final String CONNECTION_SSL_PROTOCOL_DOC = "SSLContext protocol.";
+    private static final String CONNECTION_SSL_PROTOCOL_DISPLAY = "SSL protocol";
+
+    public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION = CONNECTION_PREFIX + "ssl.hostname.verification";
+    public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = "true";
+    private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC = "SSL hostname verification.";
+    private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY = "SSL hostname verification";
+
+    public static final String CONNECTION_SSL_TRUSTSTORE_LOCATION = CONNECTION_PREFIX + "ssl.truststore.location";
+    private static final String CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC = "The location of the trust store file.";
+    private static final String CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY = "Truststore location";
+
+    public static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD = CONNECTION_PREFIX + "ssl.truststore.password";
+    private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC = "The password for the trust store file.";
+    private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY = "Truststore password";
     //endregion
 
 
@@ -147,7 +207,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_PROTOCOL_DOC,
                     CONNECTION_GROUP,
                     6,
-                    ConfigDef.Width.MEDIUM,
+                    ConfigDef.Width.SHORT,
                     CONNECTION_PROTOCOL_DISPLAY,
                     new EnumRecommender(Protocol.class)
             )
@@ -160,9 +220,119 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_CONTENT_TYPE_DOC,
                     CONNECTION_GROUP,
                     7,
-                    ConfigDef.Width.MEDIUM,
+                    ConfigDef.Width.SHORT,
                     CONNECTION_CONTENT_TYPE_DISPLAY,
                     new EnumRecommender(ContentType.class)
+            )
+            .define(
+                    CONNECTION_SSL_ENABLED,
+                    ConfigDef.Type.BOOLEAN,
+                    CONNECTION_SSL_ENABLED_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_ENABLED_DOC,
+                    CONNECTION_GROUP,
+                    8,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_SSL_ENABLED_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_CERT_VALUE,
+                    ConfigDef.Type.STRING,
+                    null,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_CERT_VALUE_DOC,
+                    CONNECTION_GROUP,
+                    9,
+                    ConfigDef.Width.LONG,
+                    CONNECTION_SSL_CERT_VALUE_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_CERT_TYPE,
+                    ConfigDef.Type.STRING,
+                    CONNECTION_SSL_CERT_TYPE_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_CERT_TYPE_DOC,
+                    CONNECTION_GROUP,
+                    10,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_SSL_CERT_TYPE_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_CERT_ALIAS,
+                    ConfigDef.Type.STRING,
+                    CONNECTION_SSL_CERT_ALIAS_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_CERT_ALIAS_DOC,
+                    CONNECTION_GROUP,
+                    11,
+                    ConfigDef.Width.MEDIUM,
+                    CONNECTION_SSL_CERT_ALIAS_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_ALGORITHM,
+                    ConfigDef.Type.STRING,
+                    CONNECTION_SSL_ALGORITHM_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_ALGORITHM_DOC,
+                    CONNECTION_GROUP,
+                    12,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_SSL_ALGORITHM_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_KEYSTORE_TYPE,
+                    ConfigDef.Type.STRING,
+                    CONNECTION_SSL_KEYSTORE_TYPE_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_KEYSTORE_TYPE_DOC,
+                    CONNECTION_GROUP,
+                    13,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_SSL_KEYSTORE_TYPE_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_PROTOCOL,
+                    ConfigDef.Type.STRING,
+                    CONNECTION_SSL_PROTOCOL_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_PROTOCOL_DOC,
+                    CONNECTION_GROUP,
+                    14,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_SSL_PROTOCOL_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_HOSTNAME_VERIFICATION,
+                    ConfigDef.Type.BOOLEAN,
+                    CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC,
+                    CONNECTION_GROUP,
+                    15,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_TRUSTSTORE_LOCATION,
+                    ConfigDef.Type.STRING,
+                    null,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC,
+                    CONNECTION_GROUP,
+                    16,
+                    ConfigDef.Width.LONG,
+                    CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY
+            )
+            .define(
+                    CONNECTION_SSL_TRUSTSTORE_PASSWORD,
+                    ConfigDef.Type.PASSWORD,
+                    null,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC,
+                    CONNECTION_GROUP,
+                    17,
+                    ConfigDef.Width.MEDIUM,
+                    CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY
             )
 
 
@@ -329,31 +499,10 @@ public class ArangoSinkConfig extends AbstractConfig {
 
     public ArangoSinkConfig(Map<?, ?> props) {
         super(CONFIG_DEF, props);
+        ensureValidSslConfig();
     }
 
-    public List<HostDescription> getEndpoints() {
-        return getList(CONNECTION_ENDPOINTS).stream()
-                .map(HostDescription::parse)
-                .collect(Collectors.toList());
-    }
-
-    public String getUser() {
-        return getString(CONNECTION_USER);
-    }
-
-    public Password getPassword() {
-        return getPassword(CONNECTION_PASSWORD);
-    }
-
-    public String getDatabase() {
-        return getString(CONNECTION_DATABASE);
-    }
-
-    public String getCollection() {
-        return getString(CONNECTION_COLLECTION);
-    }
-
-    public com.arangodb.Protocol getProtocol() {
+    private com.arangodb.Protocol getProtocol() {
         Protocol protocol = Protocol.valueOf(getString(CONNECTION_PROTOCOL).toUpperCase(Locale.ROOT));
         ContentType contentType = ContentType.valueOf(getString(CONNECTION_CONTENT_TYPE).toUpperCase(Locale.ROOT));
         if (Protocol.VST.equals(protocol)) {
@@ -373,4 +522,75 @@ public class ArangoSinkConfig extends AbstractConfig {
         }
         throw new IllegalArgumentException("[" + protocol + ", " + contentType + "]");
     }
+
+    private SSLContext createSslContext() {
+        String certValue = getString(CONNECTION_SSL_CERT_VALUE);
+        String sslCertType = getString(CONNECTION_SSL_CERT_TYPE);
+        String sslKeystoreType = getString(CONNECTION_SSL_KEYSTORE_TYPE);
+        String sslCertAlias = getString(CONNECTION_SSL_CERT_ALIAS);
+        String sslAlgorithm = getString(CONNECTION_SSL_ALGORITHM);
+        String sslProtocol = getString(CONNECTION_SSL_PROTOCOL);
+        String trustStoreLocation = getString(CONNECTION_SSL_TRUSTSTORE_LOCATION);
+        Password trustStorePassword = getPassword(CONNECTION_SSL_TRUSTSTORE_PASSWORD);
+
+        try {
+            KeyStore ks = KeyStore.getInstance(sslKeystoreType);
+            if (certValue != null) {
+                ByteArrayInputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(certValue));
+                Certificate cert = CertificateFactory.getInstance(sslCertType).generateCertificate(is);
+                ks.load(null);
+                ks.setCertificateEntry(sslCertAlias, cert);
+            } else if (trustStoreLocation != null) {
+                DataInputStream stream = new DataInputStream(Files.newInputStream(Paths.get(trustStoreLocation)));
+                ks.load(stream, trustStorePassword.value().toCharArray());
+            } else {
+                return SSLContext.getDefault();
+            }
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(sslAlgorithm);
+            tmf.init(ks);
+            SSLContext sc = SSLContext.getInstance(sslProtocol);
+            sc.init(null, tmf.getTrustManagers(), null);
+            return sc;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ArangoCollection createCollection() {
+        Password passwd = getPassword(CONNECTION_PASSWORD);
+        ArangoDB.Builder builder = new ArangoDB.Builder()
+                .user(getString(CONNECTION_USER))
+                .protocol(getProtocol());
+        if (passwd != null) {
+            builder.password(passwd.value());
+        }
+        for (HostDescription ep : getEndpoints()) {
+            builder.host(ep.getHost(), ep.getPort());
+        }
+        if (getBoolean(CONNECTION_SSL_ENABLED)) {
+            builder
+                    .useSsl(true)
+                    .sslContext(createSslContext())
+                    .verifyHost(getBoolean(CONNECTION_SSL_HOSTNAME_VERIFICATION));
+        }
+        return builder.build()
+                .db(getString(CONNECTION_DATABASE))
+                .collection(getString(CONNECTION_COLLECTION));
+    }
+
+    List<HostDescription> getEndpoints() {
+        return getList(CONNECTION_ENDPOINTS).stream()
+                .map(HostDescription::parse)
+                .collect(Collectors.toList());
+    }
+
+    private void ensureValidSslConfig() {
+        String certValue = getString(CONNECTION_SSL_CERT_VALUE);
+        String trustStoreLocation = getString(CONNECTION_SSL_TRUSTSTORE_LOCATION);
+        if (certValue != null && trustStoreLocation != null) {
+            throw new ConfigException("Cannot set both " + CONNECTION_SSL_CERT_VALUE + " and " + CONNECTION_SSL_TRUSTSTORE_LOCATION);
+        }
+    }
+
 }

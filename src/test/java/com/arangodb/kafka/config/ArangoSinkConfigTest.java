@@ -1,6 +1,5 @@
 package com.arangodb.kafka.config;
 
-import com.arangodb.Protocol;
 import com.arangodb.config.HostDescription;
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.jupiter.api.Test;
@@ -23,10 +22,13 @@ class ArangoSinkConfigTest {
     @Test
     void connectionDefaults() {
         ArangoSinkConfig config = new ArangoSinkConfig(baseProps);
-        assertThat(config.getDatabase()).isEqualTo("_system");
-        assertThat(config.getUser()).isEqualTo("root");
-        assertThat(config.getProtocol()).isEqualTo(Protocol.HTTP2_JSON);
-        assertThat(config.getPassword()).isNull();
+        assertThat(config.getString(ArangoSinkConfig.CONNECTION_DATABASE)).isEqualTo("_system");
+        assertThat(config.getString(ArangoSinkConfig.CONNECTION_USER)).isEqualTo("root");
+        assertThat(config.getString(ArangoSinkConfig.CONNECTION_PROTOCOL)).isEqualTo("HTTP2");
+        assertThat(config.getString(ArangoSinkConfig.CONNECTION_CONTENT_TYPE)).isEqualTo("JSON");
+        assertThat(config.getPassword(ArangoSinkConfig.CONNECTION_PASSWORD)).isNull();
+        assertThat(config.getBoolean(ArangoSinkConfig.CONNECTION_SSL_ENABLED)).isFalse();
+        assertThat(config.getBoolean(ArangoSinkConfig.CONNECTION_SSL_HOSTNAME_VERIFICATION)).isTrue();
     }
 
     @Test
@@ -39,48 +41,6 @@ class ArangoSinkConfigTest {
                 new HostDescription("b", 2),
                 new HostDescription("c", 3)
         );
-    }
-
-    @Test
-    void user() {
-        HashMap<String, String> props = new HashMap<>(baseProps);
-        props.put(ArangoSinkConfig.CONNECTION_USER, "jack");
-        ArangoSinkConfig config = new ArangoSinkConfig(props);
-        assertThat(config.getUser()).isEqualTo("jack");
-    }
-
-    @Test
-    void password() {
-        HashMap<String, String> props = new HashMap<>(baseProps);
-        props.put(ArangoSinkConfig.CONNECTION_PASSWORD, "passwd");
-        ArangoSinkConfig config = new ArangoSinkConfig(props);
-        assertThat(config.getPassword().toString()).doesNotContain("passwd");
-        assertThat(config.getPassword().value()).isEqualTo("passwd");
-    }
-
-    @Test
-    void database() {
-        HashMap<String, String> props = new HashMap<>(baseProps);
-        props.put(ArangoSinkConfig.CONNECTION_DATABASE, "db");
-        ArangoSinkConfig config = new ArangoSinkConfig(props);
-        assertThat(config.getDatabase()).isEqualTo("db");
-    }
-
-    @Test
-    void collection() {
-        HashMap<String, String> props = new HashMap<>(baseProps);
-        props.put(ArangoSinkConfig.CONNECTION_COLLECTION, "c");
-        ArangoSinkConfig config = new ArangoSinkConfig(props);
-        assertThat(config.getCollection()).isEqualTo("c");
-    }
-
-    @Test
-    void protocol() {
-        HashMap<String, String> props = new HashMap<>(baseProps);
-        props.put(ArangoSinkConfig.CONNECTION_PROTOCOL, ArangoSinkConfig.Protocol.HTTP11.toString());
-        props.put(ArangoSinkConfig.CONNECTION_CONTENT_TYPE, ArangoSinkConfig.ContentType.VPACK.toString());
-        ArangoSinkConfig config = new ArangoSinkConfig(props);
-        assertThat(config.getProtocol()).isEqualTo(Protocol.HTTP_VPACK);
     }
 
     @Test
@@ -103,6 +63,18 @@ class ArangoSinkConfigTest {
                 .isInstanceOf(ConfigException.class)
                 .hasMessageContaining(ArangoSinkConfig.CONNECTION_CONTENT_TYPE)
                 .hasMessageContaining("AVRO");
+    }
+
+    @Test
+    void invalidSslConfig() {
+        HashMap<String, String> props = new HashMap<>(baseProps);
+        props.put(ArangoSinkConfig.CONNECTION_SSL_CERT_VALUE, "abcde");
+        props.put(ArangoSinkConfig.CONNECTION_SSL_TRUSTSTORE_LOCATION, "/tmp");
+        Throwable thrown = catchThrowable(() -> new ArangoSinkConfig(props));
+        assertThat(thrown)
+                .isInstanceOf(ConfigException.class)
+                .hasMessageContaining(ArangoSinkConfig.CONNECTION_SSL_CERT_VALUE)
+                .hasMessageContaining(ArangoSinkConfig.CONNECTION_SSL_TRUSTSTORE_LOCATION);
     }
 
 }

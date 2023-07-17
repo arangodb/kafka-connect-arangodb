@@ -19,9 +19,6 @@
 package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
-import com.arangodb.ArangoDB;
-import com.arangodb.Protocol;
-import com.arangodb.config.HostDescription;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.conversion.ValueConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -49,22 +46,8 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("task config: {}", props);
 
         config = new ArangoSinkConfig(props);
-
         converter = new ValueConverter();
-        col = buildAdb()
-                .db(config.getDatabase())
-                .collection(config.getCollection());
-    }
-
-    private ArangoDB buildAdb() {
-        ArangoDB.Builder builder = new ArangoDB.Builder()
-                .user(config.getUser())
-                .password(config.getPassword().value())
-                .protocol(config.getProtocol());
-        for (HostDescription ep : config.getEndpoints()) {
-            builder.host(ep.getHost(), ep.getPort());
-        }
-        return builder.build();
+        col = config.createCollection();
     }
 
     @Override

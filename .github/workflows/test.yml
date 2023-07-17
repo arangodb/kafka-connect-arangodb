@@ -31,13 +31,13 @@ jobs:
         arango-version:
           - 3.11.1
         topology:
-          - cluster
+          - single
         java-version:
           - 20
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 11
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           java-version: ${{matrix.java-version}}
@@ -70,7 +70,7 @@ jobs:
         arango-version:
           - 3.11.1
         topology:
-          - single
+          - cluster
         java-version:
           - 8
           - 11
@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up JDK 11
+      - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           java-version: ${{matrix.java-version}}
@@ -101,3 +101,38 @@ jobs:
         run: ./docker/start_kafka_connect.sh
       - name: Integration Tests
         run: mvn integration-test -Dkafka.connect.host=${{env.KAFKA_CONNECT_HOST}}
+
+  ssl:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    name: ssl
+    env:
+      KAFKA_CONNECT_HOST: "http://172.28.11.11:8083"
+      ARANGO_VERSION: 3.11.1
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 11
+          distribution: 'temurin'
+          cache: maven
+      - name: Package
+        run: mvn package
+      - name: Create Network
+        run: ./docker/create_network.sh
+      - name: Start Kafka
+        run: ./docker/start_kafka.sh
+      - name: Start Schema Registry
+        run: ./docker/start_schema_registry.sh
+      - name: Start Database
+        run: ./docker/start_db.sh
+        env:
+          SSL: true
+          STARTER_MODE: cluster
+          DOCKER_IMAGE: docker.io/arangodb/arangodb:${{env.ARANGO_VERSION}}
+      - name: Start Kafka Connect
+        run: ./docker/start_kafka_connect.sh
+      - name: Integration Tests
+        run: mvn integration-test -Dkafka.connect.host=${{env.KAFKA_CONNECT_HOST}} -Dit.test=com.arangodb.kafka.SslIT -DSslTest=true

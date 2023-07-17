@@ -33,10 +33,6 @@ public interface KafkaConnectDeployment {
         return System.getProperty("kafka.connect.host");
     }
 
-    void start();
-
-    void stop();
-
     String getBootstrapServers();
 
     KafkaConnectOperations client();
