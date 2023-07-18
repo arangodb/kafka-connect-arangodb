@@ -100,7 +100,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints());
         cfg.put(ArangoSinkConfig.CONNECTION_USER, "root");
         cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
-        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, Config.DB_NAME);
+        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, ArangoSinkConfig.CONNECTION_DATABASE_DEFAULT);
         cfg.put(ArangoSinkConfig.CONNECTION_COLLECTION, name);
         return cfg;
     }

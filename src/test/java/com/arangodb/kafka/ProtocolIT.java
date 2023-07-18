@@ -28,13 +28,10 @@ import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.IntStream;
 
+import static com.arangodb.kafka.utils.Utils.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 
 class ProtocolIT {
@@ -53,15 +50,12 @@ class ProtocolIT {
     void testWrite(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
 
-        producer.produce(IntStream.range(0, 10)
-                .mapToObj(i -> {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("_key", "k-" + i);
-                    data.put("foo", "bar-" + i);
-                    return new AbstractMap.SimpleEntry<>(null, data);
-                }));
+        producer.produce(IntStream.range(0, 10).mapToObj(i -> record(null, map()
+                .add("_key", "k-" + i)
+                .add("foo", "bar-" + i)
+        )));
 
-        await().until(() -> col.count().getCount() >= 10L);
+        awaitCount(col, 10);
 
         BaseDocument doc0 = col.getDocument("k-0", BaseDocument.class);
         assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
