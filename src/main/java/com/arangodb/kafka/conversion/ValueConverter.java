@@ -19,10 +19,8 @@
 package com.arangodb.kafka.conversion;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.common.errors.SerializationException;
-import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.json.JsonConverterConfig;
@@ -50,35 +48,31 @@ public class ValueConverter {
     }
 
     public ObjectNode convert(SinkRecord record) {
-        Object value = record.value();
-        if (!(value instanceof Map) && !(value instanceof Struct)) {
-            throw new DataException("Unsupported record value format: " + record.value().getClass());
-        }
-
-        JsonNode tree;
-        try {
-            byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
-            tree = deserializer.deserialize(record.topic(), bytes);
-        } catch (SerializationException e) {
-            throw new DataException(e);
-        }
-
-        if (tree.isNull()) {
+        if (record.value() == null) {
             // TODO: delete
             throw new UnsupportedOperationException();
         }
 
-        if (!tree.isObject()) {
-            throw new DataException("Record value cannot be read as JSON object: " + tree.getClass().getName());
+        byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
+        JsonNode node = deserialize(bytes);
+
+        if (!node.isObject()) {
+            throw new DataException("Record value cannot be read as JSON object: " + node.getClass().getName());
         }
 
-        ObjectNode data = (ObjectNode) tree;
-        if (!data.hasNonNull("_key")) {
-            String key = keyConverter.convert(record);
-            data.put("_key", key);
-        }
-
+        ObjectNode data = (ObjectNode) node;
+        String keyFromField = KeyConverter.mapKey(data.get("_key"));
+        String key = keyFromField != null ? keyFromField : keyConverter.convert(record);
+        data.put("_key", key);
         return data;
+    }
+
+    private JsonNode deserialize(byte[] bytes) {
+        try {
+            return deserializer.deserialize(null, bytes);
+        } catch (SerializationException e) {
+            throw new DataException(e);
+        }
     }
 
 }
