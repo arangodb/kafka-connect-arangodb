@@ -20,7 +20,7 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import com.arangodb.kafka.conversion.ValueConverter;
+import com.arangodb.kafka.conversion.RecordConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ import java.util.Map;
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
     private ArangoSinkConfig config;
-    private ValueConverter converter;
+    private RecordConverter converter;
     private ArangoCollection col;
 
     @Override
@@ -46,7 +46,7 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("task config: {}", props);
 
         config = new ArangoSinkConfig(props);
-        converter = new ValueConverter();
+        converter = new RecordConverter();
         col = config.createCollection();
     }
 

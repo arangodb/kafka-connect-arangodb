@@ -24,6 +24,8 @@ import com.arangodb.kafka.deployment.KafkaConnectOperations;
 import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
 import com.arangodb.kafka.target.converter.ConvertTargets;
+import com.arangodb.kafka.target.converter.JsonTarget;
+import com.arangodb.kafka.target.converter.StringTarget;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,18 +52,14 @@ class ConverterIT {
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNoKey(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
-        producer.produce(null, map().add("foo", "bar"));
+        producer.produce(null, map());
         awaitCount(col, 1);
-
-        Iterable<BaseDocument> docs = col.db().query(
+        BaseDocument doc = col.db().query(
                 "FOR d IN @@col RETURN d",
                 BaseDocument.class,
                 Collections.singletonMap("@col", col.name())
-        );
-        assertThat(docs).allSatisfy(doc -> {
-            assertThat(doc.getKey()).startsWith(producer.getTopicName());
-            assertThat(doc.getAttribute("foo")).asString().isEqualTo("bar");
-        });
+        ).next();
+        assertThat(doc.getKey()).startsWith(producer.getTopicName());
     }
 
     @KafkaTest(group = ConvertTargets.class)
@@ -88,14 +86,17 @@ class ConverterIT {
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithKeyField(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
-        producer.produce(null, map()
-                .add("_key", "key")
-                .add("foo", "bar")
-        );
+        producer.produce(null, map().add("_key", "key"));
         awaitCount(col, 1);
+        assertThat(col.documentExists("key")).isTrue();
+    }
 
-        BaseDocument doc0 = col.getDocument("key", BaseDocument.class);
-        assertThat(doc0.getAttribute("foo")).isEqualTo("bar");
+    @KafkaTest({JsonTarget.class, StringTarget.class})
+    void testConversionWithNumericKeyField(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, map().add("_key", 1));
+        awaitCount(col, 1);
+        assertThat(col.documentExists("1")).isTrue();
     }
 
     @KafkaTest(group = ConvertTargets.class)
@@ -103,8 +104,18 @@ class ConverterIT {
         assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("id", map().add("foo", "bar"));
         awaitCount(col, 1);
+        BaseDocument doc = col.getDocument("id", BaseDocument.class);
+        assertThat(doc).isNotNull();
+        assertThat(doc.getAttribute("foo")).isEqualTo("bar");
+    }
 
-        BaseDocument doc0 = col.getDocument("id", BaseDocument.class);
-        assertThat(doc0.getAttribute("foo")).isEqualTo("bar");
+    @KafkaTest(group = ConvertTargets.class)
+    void testConversionWithNumericRecordId(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(1, map().add("foo", "bar"));
+        awaitCount(col, 1);
+        BaseDocument doc = col.getDocument("1", BaseDocument.class);
+        assertThat(doc).isNotNull();
+        assertThat(doc.getAttribute("foo")).isEqualTo("bar");
     }
 }

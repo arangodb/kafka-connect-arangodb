@@ -31,13 +31,13 @@ import org.apache.kafka.connect.storage.ConverterType;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ValueConverter {
+public class RecordConverter {
 
     private final JsonDeserializer deserializer;
     private final JsonConverter jsonConverter;
     private final KeyConverter keyConverter;
 
-    public ValueConverter() {
+    public RecordConverter() {
         deserializer = new JsonDeserializer();
         jsonConverter = new JsonConverter();
         Map<String, Object> converterConfig = new HashMap<>();

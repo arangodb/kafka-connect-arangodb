@@ -4,11 +4,11 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public interface Producer {
-    default void produce(Stream<Map.Entry<String, Map<String, Object>>> data) {
+    default void produce(Stream<Map.Entry<Object, Map<String, Object>>> data) {
         data.forEach(it -> produce(it.getKey(), it.getValue()));
     }
 
-    void produce(String key, Map<String, Object> value);
+    void produce(Object key, Map<String, Object> value);
 
     String getTopicName();
 }

@@ -75,8 +75,8 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         return collection;
     }
 
-    public Object serializeRecordKey(String key) {
-        return key;
+    public Object serializeRecordKey(Object key) {
+        return key.toString();
     }
 
     abstract public Object serializeRecordValue(Map<String, Object> data);
@@ -106,9 +106,9 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     @Override
-    public void produce(String key, Map<String, Object> value) {
-        Object serKey = serializeRecordKey(key);
-        Object serValue = serializeRecordValue(value);
+    public void produce(Object key, Map<String, Object> value) {
+        Object serKey = key != null ? serializeRecordKey(key) : null;
+        Object serValue = value != null ? serializeRecordValue(value): null;
         producer.send(new ProducerRecord<>(name, serKey, serValue));
         producer.flush();
     }

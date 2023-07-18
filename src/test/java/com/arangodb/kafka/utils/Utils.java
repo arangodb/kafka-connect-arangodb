@@ -12,7 +12,7 @@ public final class Utils {
     private Utils() {
     }
 
-    public static Map.Entry<String, Map<String, Object>> record(String key, Map<String, Object> value) {
+    public static Map.Entry<Object, Map<String, Object>> record(Object key, Map<String, Object> value) {
         return new AbstractMap.SimpleEntry<>(key, value);
     }
 
