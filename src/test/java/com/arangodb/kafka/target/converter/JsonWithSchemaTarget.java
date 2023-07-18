@@ -44,7 +44,7 @@ public class JsonWithSchemaTarget extends TestTarget {
                     "          }," +
                     "          {" +
                     "              \"type\": \"string\"," +
-                    "              \"optional\": false," +
+                    "              \"optional\": true," +
                     "              \"field\": \"foo\"" +
                     "          }" +
                     "      ]," +

@@ -33,7 +33,7 @@ public class AvroTarget extends TestTarget {
                     + "  \"name\":\"record\","
                     + "  \"fields\": ["
                     + "    {\"name\":\"_key\",\"type\":[\"null\", \"string\"]},"
-                    + "    {\"name\":\"foo\",\"type\":\"string\"}"
+                    + "    {\"name\":\"foo\",\"type\":[\"null\", \"string\"]}"
                     + "  ]"
                     + "}");
 

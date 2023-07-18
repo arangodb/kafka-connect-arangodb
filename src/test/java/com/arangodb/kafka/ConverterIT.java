@@ -65,6 +65,27 @@ class ConverterIT {
     }
 
     @KafkaTest(group = ConvertTargets.class)
+    void testConversionWithNullKeyField(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, map()
+                .add("_key", null)
+                .add("foo", null)
+        );
+        awaitCount(col, 1);
+
+        Iterable<BaseDocument> docs = col.db().query(
+                "FOR d IN @@col RETURN d",
+                BaseDocument.class,
+                Collections.singletonMap("@col", col.name())
+        );
+        assertThat(docs).allSatisfy(doc -> {
+            assertThat(doc.getKey()).startsWith(producer.getTopicName());
+            assertThat(doc.getProperties()).containsKey("foo");
+            assertThat(doc.getAttribute("foo")).isNull();
+        });
+    }
+
+    @KafkaTest(group = ConvertTargets.class)
     void testConversionWithKeyField(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(null, map()
