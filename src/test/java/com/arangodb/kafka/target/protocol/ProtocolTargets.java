@@ -4,7 +4,7 @@ import com.arangodb.kafka.target.TargetHolder;
 import com.arangodb.kafka.target.TestTarget;
 
 public enum ProtocolTargets implements TargetHolder {
-    VstTarget(VstTarget.class),
+//    VstTarget(VstTarget.class),
     Http1JsonTarget(Http1JsonTarget.class),
     Http1VpackTarget(Http1VpackTarget.class),
     Http2JsonTarget(Http2JsonTarget.class),

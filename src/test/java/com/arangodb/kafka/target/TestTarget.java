@@ -75,8 +75,8 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         return collection;
     }
 
-    public Object serializeRecordKey(String key) {
-        return key;
+    public Object serializeRecordKey(Object key) {
+        return key.toString();
     }
 
     abstract public Object serializeRecordValue(Map<String, Object> data);
@@ -100,15 +100,15 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints());
         cfg.put(ArangoSinkConfig.CONNECTION_USER, "root");
         cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
-        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, Config.DB_NAME);
+        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, ArangoSinkConfig.CONNECTION_DATABASE_DEFAULT);
         cfg.put(ArangoSinkConfig.CONNECTION_COLLECTION, name);
         return cfg;
     }
 
     @Override
-    public void produce(String key, Map<String, Object> value) {
-        Object serKey = serializeRecordKey(key);
-        Object serValue = serializeRecordValue(value);
+    public void produce(Object key, Map<String, Object> value) {
+        Object serKey = key != null ? serializeRecordKey(key) : null;
+        Object serValue = value != null ? serializeRecordValue(value): null;
         producer.send(new ProducerRecord<>(name, serKey, serValue));
         producer.flush();
     }

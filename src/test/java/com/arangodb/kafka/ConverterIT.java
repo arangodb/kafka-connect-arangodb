@@ -21,20 +21,20 @@ package com.arangodb.kafka;
 import com.arangodb.ArangoCollection;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.target.*;
+import com.arangodb.kafka.target.Connector;
+import com.arangodb.kafka.target.Producer;
 import com.arangodb.kafka.target.converter.ConvertTargets;
+import com.arangodb.kafka.target.converter.JsonTarget;
+import com.arangodb.kafka.target.converter.StringTarget;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import java.util.AbstractMap;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.IntStream;
 
+import static com.arangodb.kafka.utils.Utils.awaitCount;
+import static com.arangodb.kafka.utils.Utils.map;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 
 class ConverterIT {
@@ -50,13 +50,26 @@ class ConverterIT {
     }
 
     @KafkaTest(group = ConvertTargets.class)
-    void testConversion(ArangoCollection col, Producer producer) {
+    void testConversionWithNoKey(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, map());
+        awaitCount(col, 1);
+        BaseDocument doc = col.db().query(
+                "FOR d IN @@col RETURN d",
+                BaseDocument.class,
+                Collections.singletonMap("@col", col.name())
+        ).next();
+        assertThat(doc.getKey()).startsWith(producer.getTopicName());
+    }
 
-        producer.produce(IntStream.range(0, 10)
-                .mapToObj(i -> new AbstractMap.SimpleEntry<>(null, Collections.singletonMap("foo", "bar-" + i))));
-
-        await().until(() -> col.count().getCount() >= 10L);
+    @KafkaTest(group = ConvertTargets.class)
+    void testConversionWithNullKeyField(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, map()
+                .add("_key", null)
+                .add("foo", null)
+        );
+        awaitCount(col, 1);
 
         Iterable<BaseDocument> docs = col.db().query(
                 "FOR d IN @@col RETURN d",
@@ -65,38 +78,44 @@ class ConverterIT {
         );
         assertThat(docs).allSatisfy(doc -> {
             assertThat(doc.getKey()).startsWith(producer.getTopicName());
-            assertThat(doc.getAttribute("foo")).asString().startsWith("bar");
+            assertThat(doc.getProperties()).containsKey("foo");
+            assertThat(doc.getAttribute("foo")).isNull();
         });
     }
 
     @KafkaTest(group = ConvertTargets.class)
-    void testConversionWithKeyData(ArangoCollection col, Producer producer) {
+    void testConversionWithKeyField(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, map().add("_key", "key"));
+        awaitCount(col, 1);
+        assertThat(col.documentExists("key")).isTrue();
+    }
 
-        producer.produce(IntStream.range(0, 10)
-                .mapToObj(i -> {
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("_key", "k-" + i);
-                    data.put("foo", "bar-" + i);
-                    return new AbstractMap.SimpleEntry<>(null, data);
-                }));
-
-        await().until(() -> col.count().getCount() >= 10L);
-
-        BaseDocument doc0 = col.getDocument("k-0", BaseDocument.class);
-        assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
+    @KafkaTest({JsonTarget.class, StringTarget.class})
+    void testConversionWithNumericKeyField(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, map().add("_key", 1));
+        awaitCount(col, 1);
+        assertThat(col.documentExists("1")).isTrue();
     }
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithRecordId(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce("id", map().add("foo", "bar"));
+        awaitCount(col, 1);
+        BaseDocument doc = col.getDocument("id", BaseDocument.class);
+        assertThat(doc).isNotNull();
+        assertThat(doc.getAttribute("foo")).isEqualTo("bar");
+    }
 
-        producer.produce(IntStream.range(0, 10)
-                .mapToObj(i -> new AbstractMap.SimpleEntry<>("id-" + i, Collections.singletonMap("foo", "bar-" + i))));
-
-        await().until(() -> col.count().getCount() >= 10L);
-
-        BaseDocument doc0 = col.getDocument("id-0", BaseDocument.class);
-        assertThat(doc0.getAttribute("foo")).isEqualTo("bar-0");
+    @KafkaTest(group = ConvertTargets.class)
+    void testConversionWithNumericRecordId(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(1, map().add("foo", "bar"));
+        awaitCount(col, 1);
+        BaseDocument doc = col.getDocument("1", BaseDocument.class);
+        assertThat(doc).isNotNull();
+        assertThat(doc.getAttribute("foo")).isEqualTo("bar");
     }
 }

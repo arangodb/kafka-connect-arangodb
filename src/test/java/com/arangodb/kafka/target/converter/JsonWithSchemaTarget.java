@@ -44,7 +44,7 @@ public class JsonWithSchemaTarget extends TestTarget {
                     "          }," +
                     "          {" +
                     "              \"type\": \"string\"," +
-                    "              \"optional\": false," +
+                    "              \"optional\": true," +
                     "              \"field\": \"foo\"" +
                     "          }" +
                     "      ]," +
@@ -77,9 +77,9 @@ public class JsonWithSchemaTarget extends TestTarget {
     }
 
     @Override
-    public Object serializeRecordKey(String key) {
+    public Object serializeRecordKey(Object key) {
         try {
-            JsonNode payload = mapper.convertValue(key, JsonNode.class);
+            JsonNode payload = mapper.convertValue(key.toString(), JsonNode.class);
             ObjectNode res = (ObjectNode) mapper.readTree(keySchema);
             return res.set("payload", payload);
         } catch (JsonProcessingException e) {

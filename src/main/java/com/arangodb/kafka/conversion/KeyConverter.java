@@ -50,27 +50,21 @@ public class KeyConverter {
         if (record.key() == null) {
             return createKey(record);
         }
+        byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.keySchema(), record.key());
+        JsonNode node = deserialize(bytes);
+        String key = mapKey(node);
+        return key != null ? key : createKey(record);
+    }
 
-        JsonNode tree;
-        try {
-            byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.keySchema(), record.key());
-            tree = deserializer.deserialize(record.topic(), bytes);
-        } catch (SerializationException e) {
-            throw new DataException(e);
-        }
-
-        if (tree.isNull()) {
-            return createKey(record);
-        } else if (tree.isTextual()) {
-            String key = tree.textValue();
-            if (key.isEmpty()) {
-                return createKey(record);
-            }
-            return key;
-        } else if (tree.isIntegralNumber()) {
-            return String.valueOf(tree.numberValue());
+    public static String mapKey(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return null;
+        } else if (node.isTextual()) {
+            return node.textValue();
+        } else if (node.isIntegralNumber()) {
+            return String.valueOf(node.numberValue());
         } else {
-            throw new DataException("Record key cannot be read as string: " + tree.getClass().getName());
+            throw new DataException("Record key cannot be read as string: " + node.getClass().getName());
         }
     }
 
@@ -78,6 +72,14 @@ public class KeyConverter {
         String newKey = String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
         LOG.debug("Assigning _key: {}", newKey);
         return newKey;
+    }
+
+    private JsonNode deserialize(byte[] bytes) {
+        try {
+            return deserializer.deserialize(null, bytes);
+        } catch (SerializationException e) {
+            throw new DataException(e);
+        }
     }
 
 }
