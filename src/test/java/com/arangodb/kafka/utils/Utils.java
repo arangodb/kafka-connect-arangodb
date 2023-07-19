@@ -2,6 +2,7 @@ package com.arangodb.kafka.utils;
 
 import com.arangodb.ArangoCollection;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,7 +22,8 @@ public final class Utils {
     }
 
     public static void awaitCount(ArangoCollection col, int count) {
-        await().until(() -> col.count().getCount() >= count);
+        await().atMost(Duration.ofSeconds(60))
+                .until(() -> col.count().getCount() >= count);
     }
 
     public static class FluentMap<K, V> extends LinkedHashMap<K, V> {
