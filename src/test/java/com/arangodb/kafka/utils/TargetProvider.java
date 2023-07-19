@@ -3,7 +3,6 @@ package com.arangodb.kafka.utils;
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
 import com.arangodb.kafka.target.TargetHolder;
 import com.arangodb.kafka.target.TestTarget;
@@ -56,11 +55,15 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                     public List<Extension> getAdditionalExtensions() {
                         return Arrays.asList(
                                 new ParamSupplier<>(ArangoCollection.class, target::getCollection),
-                                new ParamSupplier<>(Connector.class, () -> target),
                                 new ParamSupplier<>(Producer.class, () -> target),
-                                new ParamSupplier<>(KafkaConnectOperations.class, () -> connectClient),
-                                (BeforeTestExecutionCallback) extensionContext -> target.init(),
-                                (AfterTestExecutionCallback) extensionContext -> target.close()
+                                (BeforeTestExecutionCallback) extensionContext -> {
+                                    target.init();
+                                    connectClient.createConnector(target.getConfig());
+                                },
+                                (AfterTestExecutionCallback) extensionContext -> {
+                                    connectClient.deleteConnector(target.getName());
+                                    target.close();
+                                }
                         );
                     }
                 });

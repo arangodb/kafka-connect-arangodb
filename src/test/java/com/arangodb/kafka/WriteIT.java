@@ -20,14 +20,13 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.entity.BaseDocument;
-import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.write.*;
+import com.arangodb.kafka.target.write.OverwriteModeIgnoreTarget;
+import com.arangodb.kafka.target.write.OverwriteModeReplaceTarget;
+import com.arangodb.kafka.target.write.OverwriteModeUpdateNoMergeTarget;
+import com.arangodb.kafka.target.write.OverwriteModeUpdateTarget;
 import com.arangodb.kafka.utils.KafkaTest;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
 import static com.arangodb.kafka.utils.Utils.awaitCount;
 import static com.arangodb.kafka.utils.Utils.map;
@@ -36,15 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class WriteIT {
 
-    @BeforeEach
-    void setup(KafkaConnectOperations connectClient, Connector connector) {
-        connectClient.createConnector(connector.getConfig());
-    }
-
-    @AfterEach
-    void shutdown(KafkaConnectOperations connectClient, Connector connector) {
-        connectClient.deleteConnector(connector.getName());
-    }
 
 //    @KafkaTest(OverwriteModeConflictTarget.class)
 //    void testWriteConflict(ArangoCollection col, Producer producer) {
