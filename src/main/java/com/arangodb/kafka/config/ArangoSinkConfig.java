@@ -100,7 +100,7 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_CONTENT_TYPE_DISPLAY = "Content Type";
 
     public static final String CONNECTION_SSL_ENABLED = CONNECTION_PREFIX + "ssl.enabled";
-    private static final String CONNECTION_SSL_ENABLED_DEFAULT = "false";
+    private static final boolean CONNECTION_SSL_ENABLED_DEFAULT = false;
     private static final String CONNECTION_SSL_ENABLED_DOC = "SSL secured driver connection.";
     private static final String CONNECTION_SSL_ENABLED_DISPLAY = "SSL enabled";
 
@@ -134,7 +134,7 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_SSL_PROTOCOL_DISPLAY = "SSL protocol";
 
     public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION = CONNECTION_PREFIX + "ssl.hostname.verification";
-    private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = "true";
+    private static final boolean CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = true;
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC = "SSL hostname verification.";
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY = "SSL hostname verification";
 
@@ -163,12 +163,25 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String INSERT_OVERWRITE_MODE_DISPLAY = "Overwrite Mode";
 
     public static final String INSERT_MERGE_OBJECTS = "insert.mergeObjects";
-    private static final String INSERT_MERGE_OBJECTS_DEFAULT = "true";
+    private static final boolean INSERT_MERGE_OBJECTS_DEFAULT = true;
     private static final String INSERT_MERGE_OBJECTS_DOC =
             "Whether objects (not arrays) are merged, in case ``insert.overwriteMode`` is set to ``update``:\n"
                     + "``true``: objects will be merged\n"
                     + "``false``: existing document fields will be overwritten";
     private static final String INSERT_MERGE_OBJECTS_DISPLAY = "Merge Objects";
+
+    public static final String INSERT_TIMEOUT = "insert.timeout";
+    private static final int INSERT_TIMEOUT_DEFAULT = 30_000;
+    private static final String INSERT_TIMEOUT_DOC = "Connect and request timeout in ms.";
+    private static final String INSERT_TIMEOUT_DISPLAY = "Requests timeout";
+
+    public static final String INSERT_WAIT_FOR_SYNC = "insert.waitForSync";
+    private static final boolean INSERT_WAIT_FOR_SYNC_DEFAULT = false;
+    private static final String INSERT_WAIT_FOR_SYNC_DOC =
+            "Whether to wait until the documents have been synced to disk.";
+    private static final String INSERT_WAIT_FOR_SYNC_DISPLAY = "WaitForSync";
+
+
     //endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
@@ -392,6 +405,28 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     INSERT_MERGE_OBJECTS_DISPLAY
             )
+            .define(
+                    INSERT_TIMEOUT,
+                    ConfigDef.Type.INT,
+                    INSERT_TIMEOUT_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    INSERT_TIMEOUT_DOC,
+                    WRITES_GROUP,
+                    3,
+                    ConfigDef.Width.SHORT,
+                    INSERT_TIMEOUT_DISPLAY
+            )
+            .define(
+                    INSERT_WAIT_FOR_SYNC,
+                    ConfigDef.Type.BOOLEAN,
+                    INSERT_WAIT_FOR_SYNC_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    INSERT_WAIT_FOR_SYNC_DOC,
+                    WRITES_GROUP,
+                    4,
+                    ConfigDef.Width.SHORT,
+                    INSERT_WAIT_FOR_SYNC_DISPLAY
+            )
             //endregion
 
 
@@ -608,7 +643,8 @@ public class ArangoSinkConfig extends AbstractConfig {
         Password passwd = getPassword(CONNECTION_PASSWORD);
         ArangoDB.Builder builder = new ArangoDB.Builder()
                 .user(getString(CONNECTION_USER))
-                .protocol(getProtocol());
+                .protocol(getProtocol())
+                .timeout(getInt(INSERT_TIMEOUT));
         if (passwd != null) {
             builder.password(passwd.value());
         }
@@ -632,7 +668,10 @@ public class ArangoSinkConfig extends AbstractConfig {
                         getString(INSERT_OVERWRITE_MODE).toLowerCase(Locale.ROOT)
                 ))
                 .mergeObjects(getBoolean(INSERT_MERGE_OBJECTS))
-                .keepNull(true);
+                .keepNull(true)
+                .silent(true)
+                .refillIndexCaches(false)
+                .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
     }
 
     List<HostDescription> getEndpoints() {
