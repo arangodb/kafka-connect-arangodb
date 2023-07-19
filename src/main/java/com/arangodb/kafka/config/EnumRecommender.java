@@ -13,7 +13,7 @@ public class EnumRecommender implements ConfigDef.Recommender {
     public EnumRecommender(Class<? extends Enum> streamFromClass) {
         List<String> names = new ArrayList<>();
         for (Enum value : streamFromClass.getEnumConstants()) {
-            names.add(value.name());
+            names.add(value.toString());
         }
         this.validValues = Collections.unmodifiableList(names);
     }

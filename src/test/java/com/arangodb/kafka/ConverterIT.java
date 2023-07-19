@@ -20,15 +20,11 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.entity.BaseDocument;
-import com.arangodb.kafka.deployment.KafkaConnectOperations;
-import com.arangodb.kafka.target.Connector;
 import com.arangodb.kafka.target.Producer;
 import com.arangodb.kafka.target.converter.ConvertTargets;
 import com.arangodb.kafka.target.converter.JsonTarget;
 import com.arangodb.kafka.target.converter.StringTarget;
 import com.arangodb.kafka.utils.KafkaTest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
 import java.util.Collections;
 
@@ -38,16 +34,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 class ConverterIT {
-
-    @BeforeEach
-    void setup(KafkaConnectOperations connectClient, Connector connector) {
-        connectClient.createConnector(connector.getConfig());
-    }
-
-    @AfterEach
-    void shutdown(KafkaConnectOperations connectClient, Connector connector) {
-        connectClient.deleteConnector(connector.getName());
-    }
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNoKey(ArangoCollection col, Producer producer) {

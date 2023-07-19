@@ -21,6 +21,7 @@ package com.arangodb.kafka.config;
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
 import com.arangodb.config.HostDescription;
+import com.arangodb.model.DocumentCreateOptions;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -53,9 +54,16 @@ public class ArangoSinkConfig extends AbstractConfig {
         VPACK
     }
 
+    public enum OverwriteMode {
+        CONFLICT,
+        IGNORE,
+        REPLACE,
+        UPDATE
+    }
+
     //region Connection
     private static final String CONNECTION_GROUP = "Connection";
-    public static final String CONNECTION_PREFIX = "connection.";
+    private static final String CONNECTION_PREFIX = "connection.";
 
     public static final String CONNECTION_ENDPOINTS = CONNECTION_PREFIX + "endpoints";
     private static final String CONNECTION_ENDPOINTS_DOC =
@@ -64,7 +72,7 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_ENDPOINTS_DISPLAY = "Endpoints";
 
     public static final String CONNECTION_USER = CONNECTION_PREFIX + "user";
-    public static final String CONNECTION_USER_DEFAULT = "root";
+    private static final String CONNECTION_USER_DEFAULT = "root";
     private static final String CONNECTION_USER_DOC = "Database connection user.";
     private static final String CONNECTION_USER_DISPLAY = "User";
 
@@ -73,7 +81,7 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_PASSWORD_DISPLAY = "Password";
 
     public static final String CONNECTION_DATABASE = CONNECTION_PREFIX + "database";
-    public static final String CONNECTION_DATABASE_DEFAULT = "_system";
+    private static final String CONNECTION_DATABASE_DEFAULT = "_system";
     private static final String CONNECTION_DATABASE_DOC = "Target database name.";
     private static final String CONNECTION_DATABASE_DISPLAY = "Database";
 
@@ -82,17 +90,17 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_COLLECTION_DISPLAY = "Collection";
 
     public static final String CONNECTION_PROTOCOL = CONNECTION_PREFIX + "protocol";
-    public static final String CONNECTION_PROTOCOL_DEFAULT = Protocol.HTTP2.toString();
+    private static final String CONNECTION_PROTOCOL_DEFAULT = Protocol.HTTP2.toString();
     private static final String CONNECTION_PROTOCOL_DOC = "Communication protocol.";
     private static final String CONNECTION_PROTOCOL_DISPLAY = "Protocol";
 
     public static final String CONNECTION_CONTENT_TYPE = CONNECTION_PREFIX + "content-type";
-    public static final String CONNECTION_CONTENT_TYPE_DEFAULT = ContentType.JSON.toString();
+    private static final String CONNECTION_CONTENT_TYPE_DEFAULT = ContentType.JSON.toString();
     private static final String CONNECTION_CONTENT_TYPE_DOC = "Communication content type.";
     private static final String CONNECTION_CONTENT_TYPE_DISPLAY = "Content Type";
 
     public static final String CONNECTION_SSL_ENABLED = CONNECTION_PREFIX + "ssl.enabled";
-    public static final String CONNECTION_SSL_ENABLED_DEFAULT = "false";
+    private static final String CONNECTION_SSL_ENABLED_DEFAULT = "false";
     private static final String CONNECTION_SSL_ENABLED_DOC = "SSL secured driver connection.";
     private static final String CONNECTION_SSL_ENABLED_DISPLAY = "SSL enabled";
 
@@ -101,32 +109,32 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_SSL_CERT_VALUE_DISPLAY = "SSL certificate";
 
     public static final String CONNECTION_SSL_CERT_TYPE = CONNECTION_PREFIX + "ssl.cert.type";
-    public static final String CONNECTION_SSL_CERT_TYPE_DEFAULT = "X.509";
+    private static final String CONNECTION_SSL_CERT_TYPE_DEFAULT = "X.509";
     private static final String CONNECTION_SSL_CERT_TYPE_DOC = "Certificate type.";
     private static final String CONNECTION_SSL_CERT_TYPE_DISPLAY = "Certificate type";
 
     public static final String CONNECTION_SSL_CERT_ALIAS = CONNECTION_PREFIX + "ssl.cert.alias";
-    public static final String CONNECTION_SSL_CERT_ALIAS_DEFAULT = "arangodb";
+    private static final String CONNECTION_SSL_CERT_ALIAS_DEFAULT = "arangodb";
     private static final String CONNECTION_SSL_CERT_ALIAS_DOC = "Certificate alias name.";
     private static final String CONNECTION_SSL_CERT_ALIAS_DISPLAY = "Certificate alias";
 
     public static final String CONNECTION_SSL_ALGORITHM = CONNECTION_PREFIX + "ssl.algorithm";
-    public static final String CONNECTION_SSL_ALGORITHM_DEFAULT = "SunX509";
+    private static final String CONNECTION_SSL_ALGORITHM_DEFAULT = "SunX509";
     private static final String CONNECTION_SSL_ALGORITHM_DOC = "Trust manager algorithm.";
     private static final String CONNECTION_SSL_ALGORITHM_DISPLAY = "Trust manager algorithm";
 
     public static final String CONNECTION_SSL_KEYSTORE_TYPE = CONNECTION_PREFIX + "ssl.keystore.type";
-    public static final String CONNECTION_SSL_KEYSTORE_TYPE_DEFAULT = "jks";
+    private static final String CONNECTION_SSL_KEYSTORE_TYPE_DEFAULT = "jks";
     private static final String CONNECTION_SSL_KEYSTORE_TYPE_DOC = "Keystore type.";
     private static final String CONNECTION_SSL_KEYSTORE_TYPE_DISPLAY = "Keystore type";
 
     public static final String CONNECTION_SSL_PROTOCOL = CONNECTION_PREFIX + "ssl.protocol";
-    public static final String CONNECTION_SSL_PROTOCOL_DEFAULT = "TLS";
+    private static final String CONNECTION_SSL_PROTOCOL_DEFAULT = "TLS";
     private static final String CONNECTION_SSL_PROTOCOL_DOC = "SSLContext protocol.";
     private static final String CONNECTION_SSL_PROTOCOL_DISPLAY = "SSL protocol";
 
     public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION = CONNECTION_PREFIX + "ssl.hostname.verification";
-    public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = "true";
+    private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = "true";
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC = "SSL hostname verification.";
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY = "SSL hostname verification";
 
@@ -139,10 +147,33 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY = "Truststore password";
     //endregion
 
+    //region Writes
+    private static final String WRITES_GROUP = "Writes";
+
+    public static final String INSERT_OVERWRITE_MODE = "insert.overwriteMode";
+    private static final String INSERT_OVERWRITE_MODE_DEFAULT = OverwriteMode.CONFLICT.toString();
+    private static final String INSERT_OVERWRITE_MODE_DOC =
+            "The overwrite mode to use in case a document with the specified ``_key`` value already exists.\n" +
+                    "Supported modes are:\n"
+                    + "``conflict``: the new document value is not written and an exception is thrown.\n"
+                    + "``ignore``: the new document value is not written.\n"
+                    + "``replace``: the existing document is overwritten with the new document value.\n"
+                    + "``update``: the existing document is patched (partially updated) with the new document\n"
+                    + "            value. The behavior can be further controlled setting ``insert.mergeObjects``.";
+    private static final String INSERT_OVERWRITE_MODE_DISPLAY = "Overwrite Mode";
+
+    public static final String INSERT_MERGE_OBJECTS = "insert.mergeObjects";
+    private static final String INSERT_MERGE_OBJECTS_DEFAULT = "true";
+    private static final String INSERT_MERGE_OBJECTS_DOC =
+            "Whether objects (not arrays) are merged, in case ``insert.overwriteMode`` is set to ``update``:\n"
+                    + "``true``: objects will be merged\n"
+                    + "``false``: existing document fields will be overwritten";
+    private static final String INSERT_MERGE_OBJECTS_DISPLAY = "Merge Objects";
+    //endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
 
-            // Connection
+            //region Connection
             .define(
                     CONNECTION_ENDPOINTS,
                     ConfigDef.Type.LIST,
@@ -334,6 +365,34 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Width.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY
             )
+            //endregion
+
+            //region Writes
+            .define(
+                    INSERT_OVERWRITE_MODE,
+                    ConfigDef.Type.STRING,
+                    INSERT_OVERWRITE_MODE_DEFAULT,
+                    new EnumValidator(OverwriteMode.class),
+                    ConfigDef.Importance.HIGH,
+                    INSERT_OVERWRITE_MODE_DOC,
+                    WRITES_GROUP,
+                    1,
+                    ConfigDef.Width.MEDIUM,
+                    INSERT_OVERWRITE_MODE_DISPLAY,
+                    new EnumRecommender(OverwriteMode.class)
+            )
+            .define(
+                    INSERT_MERGE_OBJECTS,
+                    ConfigDef.Type.BOOLEAN,
+                    INSERT_MERGE_OBJECTS_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    INSERT_MERGE_OBJECTS_DOC,
+                    WRITES_GROUP,
+                    2,
+                    ConfigDef.Width.SHORT,
+                    INSERT_MERGE_OBJECTS_DISPLAY
+            )
+            //endregion
 
 
 //            .define(
@@ -361,18 +420,6 @@ public class ArangoSinkConfig extends AbstractConfig {
 
 
 //            // Writes
-//            .define(
-//                    INSERT_MODE,
-//                    ConfigDef.Type.STRING,
-//                    INSERT_MODE_DEFAULT,
-//                    EnumValidator.in(InsertMode.values()),
-//                    ConfigDef.Importance.HIGH,
-//                    INSERT_MODE_DOC,
-//                    WRITES_GROUP,
-//                    1,
-//                    ConfigDef.Width.MEDIUM,
-//                    INSERT_MODE_DISPLAY
-//            )
 //            .define(
 //                    BATCH_SIZE,
 //                    ConfigDef.Type.INT,
@@ -577,6 +624,15 @@ public class ArangoSinkConfig extends AbstractConfig {
         return builder.build()
                 .db(getString(CONNECTION_DATABASE))
                 .collection(getString(CONNECTION_COLLECTION));
+    }
+
+    public DocumentCreateOptions createInsertOptions() {
+        return new DocumentCreateOptions()
+                .overwriteMode(com.arangodb.model.OverwriteMode.valueOf(
+                        getString(INSERT_OVERWRITE_MODE).toLowerCase(Locale.ROOT)
+                ))
+                .mergeObjects(getBoolean(INSERT_MERGE_OBJECTS))
+                .keepNull(true);
     }
 
     List<HostDescription> getEndpoints() {

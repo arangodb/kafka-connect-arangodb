@@ -32,8 +32,8 @@ public class VstTarget extends JsonTarget {
     @Override
     public Map<String, String> getConfig() {
         Map<String, String> cfg = super.getConfig();
-        cfg.put(ArangoSinkConfig.CONNECTION_PROTOCOL, ArangoSinkConfig.Protocol.VST.name());
-        cfg.put(ArangoSinkConfig.CONNECTION_CONTENT_TYPE, ArangoSinkConfig.ContentType.VPACK.name());
+        cfg.put(ArangoSinkConfig.CONNECTION_PROTOCOL, ArangoSinkConfig.Protocol.VST.toString());
+        cfg.put(ArangoSinkConfig.CONNECTION_CONTENT_TYPE, ArangoSinkConfig.ContentType.VPACK.toString());
         return cfg;
     }
 

@@ -21,6 +21,7 @@ package com.arangodb.kafka;
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.conversion.RecordConverter;
+import com.arangodb.model.DocumentCreateOptions;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -31,7 +32,7 @@ import java.util.Map;
 
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
-    private ArangoSinkConfig config;
+    private DocumentCreateOptions documentCreateOptions;
     private RecordConverter converter;
     private ArangoCollection col;
 
@@ -45,7 +46,8 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("Starting ArangoSinkTask.");
         LOG.info("task config: {}", props);
 
-        config = new ArangoSinkConfig(props);
+        ArangoSinkConfig config = new ArangoSinkConfig(props);
+        documentCreateOptions = config.createInsertOptions();
         converter = new RecordConverter();
         col = config.createCollection();
     }
@@ -59,7 +61,7 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("writing {} record(s)", records.size());
         for (SinkRecord record : records) {
             LOG.info("rcv msg: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            col.insertDocument(converter.convert(record));
+            col.insertDocument(converter.convert(record), documentCreateOptions);
         }
         LOG.info(col.db().getVersion().getVersion());
     }

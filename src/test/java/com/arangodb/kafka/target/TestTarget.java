@@ -100,7 +100,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints());
         cfg.put(ArangoSinkConfig.CONNECTION_USER, "root");
         cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
-        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, ArangoSinkConfig.CONNECTION_DATABASE_DEFAULT);
+        cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, "_system");
         cfg.put(ArangoSinkConfig.CONNECTION_COLLECTION, name);
         return cfg;
     }
@@ -120,6 +120,10 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         collection.db().arango().shutdown();
     }
 
+    public int getTopicPartitions(){
+        return Config.TOPIC_PARTITIONS;
+    }
+
     private ArangoCollection createCollection() {
         ArangoSinkConfig cfg = new ArangoSinkConfig(getConfig());
         ArangoCollection col = cfg.createCollection();
@@ -137,7 +141,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     private void createTopic() throws ExecutionException, InterruptedException {
-        adminClient.createTopics(Collections.singletonList(new NewTopic(name, Config.TOPIC_PARTITIONS, Config.TOPIC_REPLICATION_FACTOR)))
+        adminClient.createTopics(Collections.singletonList(new NewTopic(name, getTopicPartitions(), Config.TOPIC_REPLICATION_FACTOR)))
                 .all()
                 .toCompletionStage()
                 .handle((v, e) -> {

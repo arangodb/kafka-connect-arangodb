@@ -2,6 +2,7 @@ package com.arangodb.kafka.utils;
 
 import com.arangodb.ArangoCollection;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -9,6 +10,8 @@ import java.util.Map;
 import static org.awaitility.Awaitility.await;
 
 public final class Utils {
+    public static final int TESTS_TIMEOUT_SECONDS = 120;
+
     private Utils() {
     }
 
@@ -21,7 +24,8 @@ public final class Utils {
     }
 
     public static void awaitCount(ArangoCollection col, int count) {
-        await().until(() -> col.count().getCount() >= count);
+        await().atMost(Duration.ofSeconds(TESTS_TIMEOUT_SECONDS))
+                .until(() -> col.count().getCount() >= count);
     }
 
     public static class FluentMap<K, V> extends LinkedHashMap<K, V> {
