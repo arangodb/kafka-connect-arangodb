@@ -631,7 +631,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                 .overwriteMode(com.arangodb.model.OverwriteMode.valueOf(
                         getString(INSERT_OVERWRITE_MODE).toLowerCase(Locale.ROOT)
                 ))
-                .mergeObjects(getBoolean(INSERT_MERGE_OBJECTS));
+                .mergeObjects(getBoolean(INSERT_MERGE_OBJECTS))
+                .keepNull(true);
     }
 
     List<HostDescription> getEndpoints() {
