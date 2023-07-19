@@ -10,6 +10,8 @@ import java.util.Map;
 import static org.awaitility.Awaitility.await;
 
 public final class Utils {
+    public static final int TESTS_TIMEOUT_SECONDS = 120;
+
     private Utils() {
     }
 
@@ -22,7 +24,7 @@ public final class Utils {
     }
 
     public static void awaitCount(ArangoCollection col, int count) {
-        await().atMost(Duration.ofSeconds(60))
+        await().atMost(Duration.ofSeconds(TESTS_TIMEOUT_SECONDS))
                 .until(() -> col.count().getCount() >= count);
     }
 

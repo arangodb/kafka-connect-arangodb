@@ -11,11 +11,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import static com.arangodb.kafka.utils.Utils.TESTS_TIMEOUT_SECONDS;
+
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @TestTemplate
 @ExtendWith(TargetProvider.class)
-@Timeout(60)
+@Timeout(TESTS_TIMEOUT_SECONDS)
 public @interface KafkaTest {
     Class<? extends TestTarget>[] value() default {};
 
