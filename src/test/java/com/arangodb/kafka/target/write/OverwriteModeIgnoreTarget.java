@@ -1,11 +1,10 @@
 package com.arangodb.kafka.target.write;
 
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import com.arangodb.kafka.target.converter.JsonTarget;
 
 import java.util.Map;
 
-public class OverwriteModeIgnoreTarget extends JsonTarget {
+public class OverwriteModeIgnoreTarget extends AbstractWriteTarget {
 
     public OverwriteModeIgnoreTarget(String name) {
         super(name);
