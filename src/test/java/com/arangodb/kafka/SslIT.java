@@ -17,7 +17,7 @@ class SslIT {
     void basicDelivery(ArangoCollection col, Producer producer) {
         assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("id", map());
-        awaitCount(col, 10);
+        awaitCount(col, 1);
         assertThat(col.documentExists("id")).isTrue();
     }
 
