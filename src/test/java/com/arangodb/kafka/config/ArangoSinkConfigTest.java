@@ -29,6 +29,9 @@ class ArangoSinkConfigTest {
         assertThat(config.getPassword(ArangoSinkConfig.CONNECTION_PASSWORD)).isNull();
         assertThat(config.getBoolean(ArangoSinkConfig.CONNECTION_SSL_ENABLED)).isFalse();
         assertThat(config.getBoolean(ArangoSinkConfig.CONNECTION_SSL_HOSTNAME_VERIFICATION)).isTrue();
+        assertThat(config.getString(ArangoSinkConfig.INSERT_OVERWRITE_MODE))
+                .isEqualTo(ArangoSinkConfig.OverwriteMode.CONFLICT.toString());
+        assertThat(config.getBoolean(ArangoSinkConfig.INSERT_MERGE_OBJECTS)).isTrue();
     }
 
     @Test

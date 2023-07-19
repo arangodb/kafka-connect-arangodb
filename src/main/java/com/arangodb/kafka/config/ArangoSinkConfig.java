@@ -151,7 +151,7 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String WRITES_GROUP = "Writes";
 
     public static final String INSERT_OVERWRITE_MODE = "insert.overwriteMode";
-    private static final String INSERT_OVERWRITE_MODE_DEFAULT = "conflict";
+    private static final String INSERT_OVERWRITE_MODE_DEFAULT = OverwriteMode.CONFLICT.toString();
     private static final String INSERT_OVERWRITE_MODE_DOC =
             "The overwrite mode to use in case a document with the specified ``_key`` value already exists.\n" +
                     "Supported modes are:\n"

@@ -32,8 +32,8 @@ public class Http1VpackTarget extends JsonTarget {
     @Override
     public Map<String, String> getConfig() {
         Map<String, String> cfg = super.getConfig();
-        cfg.put(ArangoSinkConfig.CONNECTION_PROTOCOL, ArangoSinkConfig.Protocol.HTTP11.name());
-        cfg.put(ArangoSinkConfig.CONNECTION_CONTENT_TYPE, ArangoSinkConfig.ContentType.VPACK.name());
+        cfg.put(ArangoSinkConfig.CONNECTION_PROTOCOL, ArangoSinkConfig.Protocol.HTTP11.toString());
+        cfg.put(ArangoSinkConfig.CONNECTION_CONTENT_TYPE, ArangoSinkConfig.ContentType.VPACK.toString());
         return cfg;
     }
 

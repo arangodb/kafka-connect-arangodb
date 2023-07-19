@@ -22,6 +22,6 @@ import com.arangodb.kafka.ArangoSinkConnector;
 
 public class Config {
     public static final String CONNECTOR_CLASS = ArangoSinkConnector.class.getName();
-    public static final int TOPIC_PARTITIONS = 2;
+    public static final int TOPIC_PARTITIONS = 1;
     public static final short TOPIC_REPLICATION_FACTOR = 1;
 }
