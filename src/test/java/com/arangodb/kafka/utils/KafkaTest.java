@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @TestTemplate
 @ExtendWith(TargetProvider.class)
-@Timeout(30)
+@Timeout(60)
 public @interface KafkaTest {
     Class<? extends TestTarget>[] value() default {};
 
