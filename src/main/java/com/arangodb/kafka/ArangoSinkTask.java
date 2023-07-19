@@ -50,6 +50,8 @@ public class ArangoSinkTask extends SinkTask {
         documentCreateOptions = config.createInsertOptions();
         converter = new RecordConverter();
         col = config.createCollection();
+
+        config.logUnused();
     }
 
     @Override
