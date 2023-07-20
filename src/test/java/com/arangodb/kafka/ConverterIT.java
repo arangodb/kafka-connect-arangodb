@@ -104,4 +104,12 @@ class ConverterIT {
         assertThat(doc).isNotNull();
         assertThat(doc.getAttribute("foo")).isEqualTo("bar");
     }
+
+    @KafkaTest(group = ConvertTargets.class)
+    void testConversionNullValues(ArangoCollection col, Producer producer) {
+        assertThat(col.count().getCount()).isEqualTo(0L);
+        producer.produce(null, null);
+        awaitCount(col, 1);
+    }
+
 }
