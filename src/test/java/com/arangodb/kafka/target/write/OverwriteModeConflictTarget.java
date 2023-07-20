@@ -4,7 +4,7 @@ import com.arangodb.kafka.config.ArangoSinkConfig;
 
 import java.util.Map;
 
-public class OverwriteModeConflictTarget extends AbstractWriteTarget {
+public class OverwriteModeConflictTarget extends BaseWriteTarget {
 
     public OverwriteModeConflictTarget(String name) {
         super(name);

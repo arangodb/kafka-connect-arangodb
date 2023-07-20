@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.IntPredicate;
 
 import static org.awaitility.Awaitility.await;
 
@@ -24,8 +25,20 @@ public final class Utils {
     }
 
     public static void awaitCount(ArangoCollection col, int count) {
+        awaitCount(col, gte(count));
+    }
+
+    public static void awaitCount(ArangoCollection col, IntPredicate condition) {
         await().atMost(Duration.ofSeconds(TESTS_TIMEOUT_SECONDS))
-                .until(() -> col.count().getCount() >= count);
+                .until(() -> condition.test(col.count().getCount().intValue()));
+    }
+
+    public static IntPredicate eq(int v) {
+        return x -> x == v;
+    }
+
+    public static IntPredicate gte(int v) {
+        return x -> x >= v;
     }
 
     public static class FluentMap<K, V> extends LinkedHashMap<K, V> {

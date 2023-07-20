@@ -19,6 +19,7 @@
 package com.arangodb.kafka.conversion;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.connect.errors.DataException;
@@ -30,6 +31,7 @@ import org.apache.kafka.connect.storage.ConverterType;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class RecordConverter {
 
@@ -37,25 +39,20 @@ public class RecordConverter {
     private final JsonConverter jsonConverter;
     private final KeyConverter keyConverter;
 
-    public RecordConverter() {
+    public RecordConverter(KeyConverter keyConverter) {
+        this.keyConverter = keyConverter;
         deserializer = new JsonDeserializer();
         jsonConverter = new JsonConverter();
         Map<String, Object> converterConfig = new HashMap<>();
         converterConfig.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);
         converterConfig.put(JsonConverterConfig.TYPE_CONFIG, ConverterType.VALUE.getName());
         jsonConverter.configure(converterConfig);
-        keyConverter = new KeyConverter();
     }
 
     public ObjectNode convert(SinkRecord record) {
-        if (record.value() == null) {
-            // TODO: delete
-            throw new UnsupportedOperationException();
-        }
-
         byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
-        JsonNode node = deserialize(bytes);
-
+        JsonNode node = Optional.ofNullable(deserialize(bytes))
+                .orElseGet(JsonNodeFactory.instance::objectNode);
         if (!node.isObject()) {
             throw new DataException("Record value cannot be read as JSON object: " + node.getClass().getName());
         }

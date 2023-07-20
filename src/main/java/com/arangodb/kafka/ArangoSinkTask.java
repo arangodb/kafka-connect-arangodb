@@ -19,9 +19,14 @@
 package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
+import com.arangodb.ArangoDBException;
 import com.arangodb.kafka.config.ArangoSinkConfig;
+import com.arangodb.kafka.conversion.KeyConverter;
 import com.arangodb.kafka.conversion.RecordConverter;
 import com.arangodb.model.DocumentCreateOptions;
+import com.arangodb.model.DocumentDeleteOptions;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -32,7 +37,10 @@ import java.util.Map;
 
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
-    private DocumentCreateOptions documentCreateOptions;
+    private DocumentCreateOptions createOptions;
+    private DocumentDeleteOptions deleteOptions;
+    private boolean deleteEnabled;
+    private KeyConverter keyConverter;
     private RecordConverter converter;
     private ArangoCollection col;
 
@@ -47,8 +55,11 @@ public class ArangoSinkTask extends SinkTask {
         LOG.info("task config: {}", props);
 
         ArangoSinkConfig config = new ArangoSinkConfig(props);
-        documentCreateOptions = config.createInsertOptions();
-        converter = new RecordConverter();
+        createOptions = config.getCreateOptions();
+        deleteOptions = config.getDeleteOptions();
+        deleteEnabled = config.isDeleteEnabled();
+        keyConverter = new KeyConverter();
+        converter = new RecordConverter(keyConverter);
         col = config.createCollection();
 
         config.logUnused();
@@ -60,12 +71,33 @@ public class ArangoSinkTask extends SinkTask {
             return;
         }
 
-        LOG.info("writing {} record(s)", records.size());
+        LOG.trace("Writing {} record(s)", records.size());
         for (SinkRecord record : records) {
-            LOG.info("rcv msg: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            col.insertDocument(converter.convert(record), documentCreateOptions);
+            LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+            if (record.key() != null && record.value() == null) {
+                if (!deleteEnabled) {
+                    throw new ConnectException("Deletes are not enabled. To enable set: "
+                            + ArangoSinkConfig.DELETE_ENABLED + "=true");
+                }
+
+                String key = keyConverter.convert(record);
+                try {
+                    LOG.trace("Deleting document: {}", key);
+                    col.deleteDocument(key, deleteOptions);
+                } catch (ArangoDBException e) {
+                    // Response: 404, Error: 1202 - document not found
+                    if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
+                        LOG.trace("Deleting document not found: {}", key);
+                    } else {
+                        throw e;
+                    }
+                }
+            } else {
+                ObjectNode doc = converter.convert(record);
+                LOG.trace("Inserting document: {}", doc.get("_key"));
+                col.insertDocument(doc, createOptions);
+            }
         }
-        LOG.info(col.db().getVersion().getVersion());
     }
 
     @Override

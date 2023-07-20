@@ -2,9 +2,9 @@ package com.arangodb.kafka.target.write;
 
 import com.arangodb.kafka.target.converter.JsonTarget;
 
-abstract class AbstractWriteTarget extends JsonTarget {
+public class BaseWriteTarget extends JsonTarget {
 
-    public AbstractWriteTarget(String name) {
+    public BaseWriteTarget(String name) {
         super(name);
     }
 

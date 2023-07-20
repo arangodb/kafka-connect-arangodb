@@ -29,10 +29,10 @@ import org.apache.kafka.connect.storage.StringConverter;
 
 import java.util.Map;
 
-public abstract class AbstractJsonTarget extends TestTarget {
+public class BaseTarget extends TestTarget {
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public AbstractJsonTarget(String name) {
+    public BaseTarget(String name) {
         super(name);
     }
 

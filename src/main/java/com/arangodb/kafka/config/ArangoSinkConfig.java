@@ -22,6 +22,7 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDB;
 import com.arangodb.config.HostDescription;
 import com.arangodb.model.DocumentCreateOptions;
+import com.arangodb.model.DocumentDeleteOptions;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -181,7 +182,10 @@ public class ArangoSinkConfig extends AbstractConfig {
             "Whether to wait until the documents have been synced to disk.";
     private static final String INSERT_WAIT_FOR_SYNC_DISPLAY = "WaitForSync";
 
-
+    public static final String DELETE_ENABLED = "delete.enabled";
+    private static final boolean DELETE_ENABLED_DEFAULT = false;
+    private static final String DELETE_ENABLED_DOC = "Whether to enable delete behavior when processing tombstones.";
+    private static final String DELETE_ENABLED_DISPLAY = "Enable deletes";
     //endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
@@ -406,13 +410,24 @@ public class ArangoSinkConfig extends AbstractConfig {
                     INSERT_MERGE_OBJECTS_DISPLAY
             )
             .define(
+                    DELETE_ENABLED,
+                    ConfigDef.Type.BOOLEAN,
+                    DELETE_ENABLED_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    DELETE_ENABLED_DOC,
+                    WRITES_GROUP,
+                    3,
+                    ConfigDef.Width.SHORT,
+                    DELETE_ENABLED_DISPLAY
+            )
+            .define(
                     INSERT_TIMEOUT,
                     ConfigDef.Type.INT,
                     INSERT_TIMEOUT_DEFAULT,
                     ConfigDef.Importance.LOW,
                     INSERT_TIMEOUT_DOC,
                     WRITES_GROUP,
-                    3,
+                    4,
                     ConfigDef.Width.SHORT,
                     INSERT_TIMEOUT_DISPLAY
             )
@@ -423,7 +438,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     INSERT_WAIT_FOR_SYNC_DOC,
                     WRITES_GROUP,
-                    4,
+                    5,
                     ConfigDef.Width.SHORT,
                     INSERT_WAIT_FOR_SYNC_DISPLAY
             )
@@ -465,17 +480,6 @@ public class ArangoSinkConfig extends AbstractConfig {
 //                    2,
 //                    ConfigDef.Width.SHORT,
 //                    BATCH_SIZE_DISPLAY
-//            )
-//            .define(
-//                    DELETE_ENABLED,
-//                    ConfigDef.Type.BOOLEAN,
-//                    DELETE_ENABLED_DEFAULT,
-//                    ConfigDef.Importance.MEDIUM,
-//                    DELETE_ENABLED_DOC, WRITES_GROUP,
-//                    3,
-//                    ConfigDef.Width.SHORT,
-//                    DELETE_ENABLED_DISPLAY,
-//                    DeleteEnabledRecommender.INSTANCE
 //            )
 //            .define(
 //                    TABLE_TYPES_CONFIG,
@@ -662,7 +666,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                 .collection(getString(CONNECTION_COLLECTION));
     }
 
-    public DocumentCreateOptions createInsertOptions() {
+    public DocumentCreateOptions getCreateOptions() {
         return new DocumentCreateOptions()
                 .overwriteMode(com.arangodb.model.OverwriteMode.valueOf(
                         getString(INSERT_OVERWRITE_MODE).toLowerCase(Locale.ROOT)
@@ -672,6 +676,17 @@ public class ArangoSinkConfig extends AbstractConfig {
                 .silent(true)
                 .refillIndexCaches(false)
                 .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
+    }
+
+    public DocumentDeleteOptions getDeleteOptions() {
+        return new DocumentDeleteOptions()
+                .silent(true)
+                .refillIndexCaches(false)
+                .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
+    }
+
+    public boolean isDeleteEnabled() {
+        return getBoolean(DELETE_ENABLED);
     }
 
     List<HostDescription> getEndpoints() {

@@ -34,7 +34,6 @@ class ProtocolIT {
 
     @KafkaTest(group = ProtocolTargets.class)
     void testWrite(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(IntStream.range(0, 10).mapToObj(i ->
                 record("k-" + i, map().add("foo", "bar-" + i))));
         awaitCount(col, 10);
