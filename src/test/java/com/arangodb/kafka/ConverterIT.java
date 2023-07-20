@@ -37,7 +37,6 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNoKey(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(null, map());
         awaitCount(col, 1);
         BaseDocument doc = col.db().query(
@@ -50,7 +49,6 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNullKeyField(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(null, map()
                 .add("_key", null)
                 .add("foo", null)
@@ -71,7 +69,6 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithKeyField(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(null, map().add("_key", "key"));
         awaitCount(col, 1);
         assertThat(col.documentExists("key")).isTrue();
@@ -79,7 +76,6 @@ class ConverterIT {
 
     @KafkaTest({JsonTarget.class, StringTarget.class})
     void testConversionWithNumericKeyField(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(null, map().add("_key", 1));
         awaitCount(col, 1);
         assertThat(col.documentExists("1")).isTrue();
@@ -87,7 +83,6 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithRecordId(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("id", map().add("foo", "bar"));
         awaitCount(col, 1);
         BaseDocument doc = col.getDocument("id", BaseDocument.class);
@@ -97,7 +92,6 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNumericRecordId(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(1, map().add("foo", "bar"));
         awaitCount(col, 1);
         BaseDocument doc = col.getDocument("1", BaseDocument.class);
@@ -107,7 +101,6 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionNullValues(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce(null, null);
         awaitCount(col, 1);
     }

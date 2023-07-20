@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class TargetProvider implements TestTemplateInvocationContextProvider {
     private static final KafkaConnectOperations connectClient = KafkaConnectDeployment.getInstance().client();
 
@@ -59,6 +61,7 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                                 (BeforeTestExecutionCallback) extensionContext -> {
                                     target.init();
                                     connectClient.createConnector(target.getConfig());
+                                    assertThat(target.getCollection().count().getCount()).isEqualTo(0L);
                                 },
                                 (AfterTestExecutionCallback) extensionContext -> {
                                     connectClient.deleteConnector(target.getName());

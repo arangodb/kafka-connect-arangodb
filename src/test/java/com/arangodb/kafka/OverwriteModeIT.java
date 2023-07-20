@@ -43,7 +43,6 @@ class OverwriteModeIT {
 
     @KafkaTest(OverwriteModeIgnoreTarget.class)
     void testWriteIgnore(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("key", map().add("value", "foo"));
         producer.produce("key", map().add("value", "bar"));
         producer.produce("flush", map());
@@ -55,7 +54,6 @@ class OverwriteModeIT {
 
     @KafkaTest(OverwriteModeReplaceTarget.class)
     void testWriteReplace(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("key", map().add("value", "foo"));
         producer.produce("key", map().add("value", "bar"));
         producer.produce("flush", map());
@@ -67,7 +65,6 @@ class OverwriteModeIT {
 
     @KafkaTest(OverwriteModeUpdateTarget.class)
     void testWriteUpdate(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("key", map()
                 .add("value", "foo")
                 .add("fooField", "foo")
@@ -95,7 +92,6 @@ class OverwriteModeIT {
 
     @KafkaTest(OverwriteModeUpdateNoMergeTarget.class)
     void testWriteUpdateNoMerge(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
         producer.produce("key", map()
                 .add("value", "foo")
                 .add("fooField", "foo")
