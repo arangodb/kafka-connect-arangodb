@@ -18,9 +18,9 @@
 
 package com.arangodb.kafka.target.converter;
 
-import com.arangodb.kafka.target.AbstractJsonTarget;
+import com.arangodb.kafka.target.BaseTarget;
 
-public class JsonTarget extends AbstractJsonTarget {
+public class JsonTarget extends BaseTarget {
     public JsonTarget(String name) {
         super(name);
     }

@@ -37,22 +37,17 @@ public class RecordConverter {
     private final JsonConverter jsonConverter;
     private final KeyConverter keyConverter;
 
-    public RecordConverter() {
+    public RecordConverter(KeyConverter keyConverter) {
+        this.keyConverter = keyConverter;
         deserializer = new JsonDeserializer();
         jsonConverter = new JsonConverter();
         Map<String, Object> converterConfig = new HashMap<>();
         converterConfig.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);
         converterConfig.put(JsonConverterConfig.TYPE_CONFIG, ConverterType.VALUE.getName());
         jsonConverter.configure(converterConfig);
-        keyConverter = new KeyConverter();
     }
 
     public ObjectNode convert(SinkRecord record) {
-        if (record.value() == null) {
-            // TODO: delete
-            throw new UnsupportedOperationException();
-        }
-
         byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
         JsonNode node = deserialize(bytes);
 

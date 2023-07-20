@@ -19,106 +19,41 @@
 package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
-import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.write.OverwriteModeIgnoreTarget;
-import com.arangodb.kafka.target.write.OverwriteModeReplaceTarget;
-import com.arangodb.kafka.target.write.OverwriteModeUpdateNoMergeTarget;
-import com.arangodb.kafka.target.write.OverwriteModeUpdateTarget;
+import com.arangodb.kafka.target.write.DeleteTarget;
 import com.arangodb.kafka.utils.KafkaTest;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import static com.arangodb.kafka.utils.Utils.awaitCount;
-import static com.arangodb.kafka.utils.Utils.map;
+import static com.arangodb.kafka.utils.Utils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 class WriteIT {
 
+    @KafkaTest(DeleteTarget.class)
+    void deleteEnabled(ArangoCollection col, Producer producer) {
+        producer.produce("key", map().add("value", "foo"));
+        awaitCount(col, 1);
+        assertThat(col.documentExists("key")).isTrue();
 
-//    @KafkaTest(OverwriteModeConflictTarget.class)
-//    void testWriteConflict(ArangoCollection col, Producer producer) {
-//        // TODO: test with DLQ
+        // delete
+        producer.produce("key", null);
+        awaitCount(col, eq(0));
+
+        // test whether delete is idempotent
+        producer.produce("key", null);
+
+        producer.produce("flush", map());
+        awaitCount(col, 1);
+        assertThat(col.documentExists("flush")).isTrue();
+    }
+
+    // TODO: test with DLQ
+//    @KafkaTest(BaseWriteTarget.class)
+//    void deleteDisabled(ArangoCollection col, Producer producer) {
+//        producer.produce("key", null);
+//        producer.produce("flush", map());
+//        awaitCount(col, 1);
+//        assertThat(col.documentExists("flush")).isTrue();
 //    }
-
-    @KafkaTest(OverwriteModeIgnoreTarget.class)
-    void testWriteIgnore(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
-        producer.produce("key", map().add("value", "foo"));
-        producer.produce("key", map().add("value", "bar"));
-        producer.produce("flush", map());
-        awaitCount(col, 2);
-
-        BaseDocument doc = col.getDocument("key", BaseDocument.class);
-        assertThat(doc.getAttribute("value")).isEqualTo("foo");
-    }
-
-    @KafkaTest(OverwriteModeReplaceTarget.class)
-    void testWriteReplace(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
-        producer.produce("key", map().add("value", "foo"));
-        producer.produce("key", map().add("value", "bar"));
-        producer.produce("flush", map());
-        awaitCount(col, 2);
-
-        BaseDocument doc = col.getDocument("key", BaseDocument.class);
-        assertThat(doc.getAttribute("value")).isEqualTo("bar");
-    }
-
-    @KafkaTest(OverwriteModeUpdateTarget.class)
-    void testWriteUpdate(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
-        producer.produce("key", map()
-                .add("value", "foo")
-                .add("fooField", "foo")
-                .add("nested", map()
-                        .add("fooField", "foo")
-                )
-        );
-        producer.produce("key", map()
-                .add("value", "bar")
-                .add("barField", "bar")
-                .add("nested", map()
-                        .add("barField", "bar")
-                )
-        );
-        producer.produce("flush", map());
-        awaitCount(col, 2);
-
-        ObjectNode doc = col.getDocument("key", ObjectNode.class);
-        assertThat(doc.get("value").textValue()).isEqualTo("bar");
-        assertThat(doc.get("fooField").textValue()).isEqualTo("foo");
-        assertThat(doc.get("barField").textValue()).isEqualTo("bar");
-        assertThat(doc.get("nested").get("fooField").textValue()).isEqualTo("foo");
-        assertThat(doc.get("nested").get("barField").textValue()).isEqualTo("bar");
-    }
-
-    @KafkaTest(OverwriteModeUpdateNoMergeTarget.class)
-    void testWriteUpdateNoMerge(ArangoCollection col, Producer producer) {
-        assertThat(col.count().getCount()).isEqualTo(0L);
-        producer.produce("key", map()
-                .add("value", "foo")
-                .add("fooField", "foo")
-                .add("nested", map()
-                        .add("fooField", "foo")
-                )
-        );
-        producer.produce("key", map()
-                .add("value", "bar")
-                .add("barField", "bar")
-                .add("nested", map()
-                        .add("barField", "bar")
-                )
-        );
-        producer.produce("flush", map());
-        awaitCount(col, 2);
-
-        ObjectNode doc = col.getDocument("key", ObjectNode.class);
-        assertThat(doc.get("value").textValue()).isEqualTo("bar");
-        assertThat(doc.get("fooField").textValue()).isEqualTo("foo");
-        assertThat(doc.get("barField").textValue()).isEqualTo("bar");
-        assertThat(doc.get("nested").has("fooField")).isFalse();
-        assertThat(doc.get("nested").get("barField").textValue()).isEqualTo("bar");
-    }
 
 }

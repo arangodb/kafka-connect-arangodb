@@ -108,7 +108,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     @Override
     public void produce(Object key, Map<String, Object> value) {
         Object serKey = key != null ? serializeRecordKey(key) : null;
-        Object serValue = value != null ? serializeRecordValue(value): null;
+        Object serValue = value != null ? serializeRecordValue(value) : null;
         producer.send(new ProducerRecord<>(name, serKey, serValue));
         producer.flush();
     }
@@ -120,7 +120,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         collection.db().arango().shutdown();
     }
 
-    public int getTopicPartitions(){
+    public int getTopicPartitions() {
         return Config.TOPIC_PARTITIONS;
     }
 
@@ -141,6 +141,10 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     private void createTopic() throws ExecutionException, InterruptedException {
+        Set<String> topics = adminClient.listTopics().names().get();
+        if (topics.contains(name)) {
+            adminClient.deleteTopics(Collections.singleton(name)).all().get();
+        }
         adminClient.createTopics(Collections.singletonList(new NewTopic(name, getTopicPartitions(), Config.TOPIC_REPLICATION_FACTOR)))
                 .all()
                 .toCompletionStage()

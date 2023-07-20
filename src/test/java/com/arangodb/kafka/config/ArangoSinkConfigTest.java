@@ -32,6 +32,7 @@ class ArangoSinkConfigTest {
         assertThat(config.getString(ArangoSinkConfig.INSERT_OVERWRITE_MODE))
                 .isEqualTo(ArangoSinkConfig.OverwriteMode.CONFLICT.toString());
         assertThat(config.getBoolean(ArangoSinkConfig.INSERT_MERGE_OBJECTS)).isTrue();
+        assertThat(config.getBoolean(ArangoSinkConfig.DELETE_ENABLED)).isFalse();
     }
 
     @Test

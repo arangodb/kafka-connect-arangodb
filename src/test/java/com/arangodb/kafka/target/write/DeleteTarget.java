@@ -4,16 +4,16 @@ import com.arangodb.kafka.config.ArangoSinkConfig;
 
 import java.util.Map;
 
-public class OverwriteModeIgnoreTarget extends BaseWriteTarget {
+public class DeleteTarget extends BaseWriteTarget {
 
-    public OverwriteModeIgnoreTarget(String name) {
+    public DeleteTarget(String name) {
         super(name);
     }
 
     @Override
     public Map<String, String> getConfig() {
         Map<String, String> cfg = super.getConfig();
-        cfg.put(ArangoSinkConfig.INSERT_OVERWRITE_MODE, ArangoSinkConfig.OverwriteMode.IGNORE.toString());
+        cfg.put(ArangoSinkConfig.DELETE_ENABLED, "true");
         return cfg;
     }
 
