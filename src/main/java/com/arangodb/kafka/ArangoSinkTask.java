@@ -86,6 +86,7 @@ public class ArangoSinkTask extends SinkTask {
                     col.deleteDocument(key, deleteOptions);
                 } catch (ArangoDBException e) {
                     // Response: 404, Error: 1202 - document not found
+                    // returned in case the document does not exist or the key is illegal
                     if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
                         LOG.trace("Deleting document not found: {}", key);
                     } else {

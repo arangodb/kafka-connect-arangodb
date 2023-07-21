@@ -42,6 +42,9 @@ class WriteIT {
         // test whether delete is idempotent
         producer.produce("key", null);
 
+        // test whether delete ignores illegal keys
+        producer.produce("key#1", null);
+
         producer.produce("flush", map());
         awaitCount(col, 1);
         assertThat(col.documentExists("flush")).isTrue();
