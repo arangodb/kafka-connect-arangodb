@@ -606,7 +606,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                 return com.arangodb.Protocol.HTTP2_VPACK;
             }
         }
-        throw new IllegalArgumentException("[" + protocol + ", " + contentType + "]");
+        throw new ConfigException("[" + CONNECTION_PROTOCOL + "=" + protocol + ", " +
+                CONNECTION_CONTENT_TYPE + "=" + contentType + "] is not supported.");
     }
 
     private SSLContext createSslContext() {

@@ -27,6 +27,8 @@ import com.arangodb.model.DocumentCreateOptions;
 import com.arangodb.model.DocumentDeleteOptions;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.RetriableException;
+import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -43,6 +45,13 @@ public class ArangoSinkTask extends SinkTask {
     private KeyConverter keyConverter;
     private RecordConverter converter;
     private ArangoCollection col;
+    private ErrantRecordReporter reporter;
+
+    // TODO: add config
+    private int maxRetries = 0;
+    private int remainingRetries = 0;
+    // TODO: add config
+    private int retryBackoffMs = 0;
 
     @Override
     public String version() {
@@ -61,6 +70,12 @@ public class ArangoSinkTask extends SinkTask {
         keyConverter = new KeyConverter();
         converter = new RecordConverter(keyConverter);
         col = config.createCollection();
+        reporter = context.errantRecordReporter();
+        if (reporter == null) {
+            LOG.warn("Errant record reporter not configured.");
+        }
+        context.timeout(retryBackoffMs);
+        remainingRetries = maxRetries;
 
         config.logUnused();
     }
@@ -71,33 +86,79 @@ public class ArangoSinkTask extends SinkTask {
             return;
         }
 
-        LOG.trace("Writing {} record(s)", records.size());
+        LOG.trace("Handling {} record(s)", records.size());
         for (SinkRecord record : records) {
-            LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            if (record.key() != null && record.value() == null) {
-                if (!deleteEnabled) {
-                    throw new ConnectException("Deletes are not enabled. To enable set: "
-                            + ArangoSinkConfig.DELETE_ENABLED + "=true");
+            try {
+                handleRecord(record);
+            } catch (RetriableException e) {
+                throw e;
+            } catch (Exception e) {
+                if (reporter != null) {
+                    reporter.report(record, e);
+                } else {
+                    throw e;
                 }
-
-                String key = keyConverter.convert(record);
-                try {
-                    LOG.trace("Deleting document: {}", key);
-                    col.deleteDocument(key, deleteOptions);
-                } catch (ArangoDBException e) {
-                    // Response: 404, Error: 1202 - document not found
-                    // returned in case the document does not exist or the key is illegal
-                    if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
-                        LOG.trace("Deleting document not found: {}", key);
-                    } else {
-                        throw e;
-                    }
-                }
-            } else {
-                ObjectNode doc = converter.convert(record);
-                LOG.trace("Inserting document: {}", doc.get("_key"));
-                col.insertDocument(doc, createOptions);
             }
+        }
+    }
+
+    private void handleRecord(SinkRecord record) {
+        LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+        if (record.key() != null && record.value() == null) {
+            handleDelete(record);
+        } else {
+            handleInsert(record);
+        }
+        remainingRetries = maxRetries;
+    }
+
+    private void handleDelete(SinkRecord record) {
+        if (!deleteEnabled) {
+            throw new ConnectException("Deletes are not enabled. To enable set: "
+                    + ArangoSinkConfig.DELETE_ENABLED + "=true");
+        }
+
+        String key = keyConverter.convert(record);
+        try {
+            LOG.trace("Deleting document: {}", key);
+            col.deleteDocument(key, deleteOptions);
+        } catch (ArangoDBException e) {
+            // Response: 404, Error: 1202 - document not found
+            if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
+                LOG.trace("Deleting document not found: {}", key);
+            } else {
+                handleRetriableException(new ConnectException(e));
+            }
+        } catch (Exception e) {
+            handleRetriableException(new ConnectException(e));
+        }
+    }
+
+    private void handleInsert(SinkRecord record) {
+        ObjectNode doc = converter.convert(record);
+        LOG.trace("Inserting document: {}", doc.get("_key"));
+        try {
+            col.insertDocument(doc, createOptions);
+        } catch (ArangoDBException e) {
+            ConnectException ce = new ConnectException(e);
+            Integer respCode = e.getResponseCode();
+            if (respCode == 400 || respCode == 404 || respCode == 409 || respCode == 412) {
+                throw ce;
+            } else {
+                handleRetriableException(ce);
+            }
+        } catch (Exception e) {
+            handleRetriableException(new ConnectException(e));
+        }
+    }
+
+    private void handleRetriableException(ConnectException e) {
+        if (remainingRetries > 0) {
+            remainingRetries--;
+            throw new RetriableException(e);
+        } else {
+            remainingRetries = maxRetries;
+            throw e;
         }
     }
 
