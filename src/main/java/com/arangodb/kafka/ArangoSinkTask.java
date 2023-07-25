@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
@@ -48,11 +47,8 @@ public class ArangoSinkTask extends SinkTask {
     private ArangoCollection col;
     private ErrantRecordReporter reporter;
 
-    // TODO: add config
-    private int maxRetries = 0;
-    private int remainingRetries = 0;
-    // TODO: add config
-    private int retryBackoffMs = 0;
+    private int maxRetries;
+    private int remainingRetries;
 
     @Override
     public String version() {
@@ -75,8 +71,9 @@ public class ArangoSinkTask extends SinkTask {
         if (reporter == null) {
             LOG.warn("Errant record reporter not configured.");
         }
-        context.timeout(retryBackoffMs);
+        maxRetries = config.getMaxRetries();
         remainingRetries = maxRetries;
+        context.timeout(config.getRetryBackoffMs());
 
         config.logUnused();
     }
@@ -126,9 +123,13 @@ public class ArangoSinkTask extends SinkTask {
             LOG.trace("Deleting document: {}", key);
             col.deleteDocument(key, deleteOptions);
         } catch (ArangoDBException e) {
-            // Response: 404, Error: 1202 - document not found
-            if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
-                LOG.trace("Deleting document not found: {}", key);
+            if (e.getResponseCode() == 404) {
+                if (e.getErrorNum() == 1202) {
+                    // Response: 404, Error: 1202 - document not found
+                    LOG.trace("Deleting document not found: {}", key);
+                } else {
+                    throw new ConnectException(e);
+                }
             } else {
                 handleRetriableException(new ConnectException(e));
             }
@@ -143,12 +144,11 @@ public class ArangoSinkTask extends SinkTask {
         try {
             col.insertDocument(doc, createOptions);
         } catch (ArangoDBException e) {
-            ConnectException ce = new ConnectException(e);
             Integer respCode = e.getResponseCode();
             if (respCode == 400 || respCode == 404 || respCode == 409 || respCode == 412) {
-                throw ce;
+                throw new ConnectException(e);
             } else {
-                handleRetriableException(ce);
+                handleRetriableException(new ConnectException(e));
             }
         } catch (Exception e) {
             handleRetriableException(new ConnectException(e));
