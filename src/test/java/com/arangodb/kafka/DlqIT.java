@@ -2,7 +2,7 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.write.BaseWriteTarget;
+import com.arangodb.kafka.target.dlq.DlqTarget;
 import com.arangodb.kafka.utils.KafkaTest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
@@ -13,7 +13,7 @@ import static com.arangodb.kafka.utils.Utils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DlqIT {
-    @KafkaTest(BaseWriteTarget.class)
+    @KafkaTest(DlqTarget.class)
     void illegalKey(ArangoCollection col, Producer producer, Map<String, ConsumerRecord<String, String>> dlq) {
         producer.produce("illegal#key", map());
         producer.produce("flush", map());

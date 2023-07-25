@@ -74,12 +74,14 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-        dlqExecutor = Executors.newSingleThreadScheduledExecutor();
-        dlqExecutor.execute(() -> {
-            dlqConsumer = new KafkaConsumer<>(dlqConsumerConfig());
-            dlqConsumer.subscribe(Collections.singleton(dlqName));
-        });
-        dlqExecutor.scheduleAtFixedRate(this::consumeDlq, 50, 100, TimeUnit.MILLISECONDS);
+        if (supportsDLQ()) {
+            dlqExecutor = Executors.newSingleThreadScheduledExecutor();
+            dlqExecutor.execute(() -> {
+                dlqConsumer = new KafkaConsumer<>(dlqConsumerConfig());
+                dlqConsumer.subscribe(Collections.singleton(dlqName));
+            });
+            dlqExecutor.scheduleAtFixedRate(this::consumeDlq, 50, 100, TimeUnit.MILLISECONDS);
+        }
     }
 
     private void consumeDlq() {
@@ -139,8 +141,6 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         cfg.put(SinkConnectorConfig.CONNECTOR_CLASS_CONFIG, Config.CONNECTOR_CLASS);
         cfg.put(SinkConnectorConfig.TOPICS_CONFIG, name);
         cfg.put(SinkConnectorConfig.TASKS_MAX_CONFIG, "2");
-        cfg.put(SinkConnectorConfig.DLQ_TOPIC_NAME_CONFIG, dlqName);
-        cfg.put(SinkConnectorConfig.DLQ_CONTEXT_HEADERS_ENABLE_CONFIG, "true");
         cfg.put("errors.tolerance", "all");
         cfg.put("key.converter.schemas.enable", "false");
         cfg.put("value.converter.schemas.enable", "false");
@@ -149,6 +149,10 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
         cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, "_system");
         cfg.put(ArangoSinkConfig.CONNECTION_COLLECTION, name);
+        if (supportsDLQ()) {
+            cfg.put(SinkConnectorConfig.DLQ_TOPIC_NAME_CONFIG, dlqName);
+            cfg.put(SinkConnectorConfig.DLQ_CONTEXT_HEADERS_ENABLE_CONFIG, "true");
+        }
         return cfg;
     }
 
@@ -163,10 +167,16 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     @Override
     public void close() {
         producer.close();
-        dlqExecutor.execute(() -> dlqConsumer.close());
-        dlqExecutor.shutdown();
+        if (supportsDLQ()) {
+            dlqExecutor.execute(() -> dlqConsumer.close());
+            dlqExecutor.shutdown();
+        }
         adminClient.close();
         collection.db().arango().shutdown();
+    }
+
+    public boolean supportsDLQ() {
+        return false;
     }
 
     public int getTopicPartitions() {
@@ -194,11 +204,14 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         if (topics.contains(name)) {
             adminClient.deleteTopics(Collections.singleton(name)).all().get();
         }
-        if (topics.contains(dlqName)) {
-            adminClient.deleteTopics(Collections.singleton(dlqName)).all().get();
-        }
         createTopic(name);
-        createTopic(dlqName);
+
+        if (supportsDLQ()) {
+            if (topics.contains(dlqName)) {
+                adminClient.deleteTopics(Collections.singleton(dlqName)).all().get();
+            }
+            createTopic(dlqName);
+        }
     }
 
     private void createTopic(String topicName) throws ExecutionException, InterruptedException {
