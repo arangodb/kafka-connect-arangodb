@@ -37,7 +37,7 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNoKey(ArangoCollection col, Producer producer) {
-        producer.produce(null, map());
+        producer.produce(map());
         awaitCount(col, 1);
         BaseDocument doc = col.db().query(
                 "FOR d IN @@col RETURN d",
@@ -49,7 +49,7 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithNullKeyField(ArangoCollection col, Producer producer) {
-        producer.produce(null, map()
+        producer.produce(map()
                 .add("_key", null)
                 .add("foo", null)
         );
@@ -69,14 +69,14 @@ class ConverterIT {
 
     @KafkaTest(group = ConvertTargets.class)
     void testConversionWithKeyField(ArangoCollection col, Producer producer) {
-        producer.produce(null, map().add("_key", "key"));
+        producer.produce(map().add("_key", "key"));
         awaitCount(col, 1);
         assertThat(col.documentExists("key")).isTrue();
     }
 
     @KafkaTest({JsonTarget.class, StringTarget.class})
     void testConversionWithNumericKeyField(ArangoCollection col, Producer producer) {
-        producer.produce(null, map().add("_key", 1));
+        producer.produce(map().add("_key", 1));
         awaitCount(col, 1);
         assertThat(col.documentExists("1")).isTrue();
     }

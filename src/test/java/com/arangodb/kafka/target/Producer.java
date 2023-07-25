@@ -9,6 +9,9 @@ public interface Producer {
     }
 
     void produce(Object key, Map<String, Object> value);
+    default void produce(Map<String, Object> value) {
+        produce(null, value);
+    }
 
     String getTopicName();
 }
