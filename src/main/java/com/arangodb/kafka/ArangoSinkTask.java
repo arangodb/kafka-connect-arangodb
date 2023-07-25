@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
@@ -94,6 +95,7 @@ public class ArangoSinkTask extends SinkTask {
                 throw e;
             } catch (Exception e) {
                 if (reporter != null) {
+                    LOG.debug("Reporting exception to DLQ:", e);
                     reporter.report(record, e);
                 } else {
                     throw e;
@@ -110,6 +112,7 @@ public class ArangoSinkTask extends SinkTask {
             handleInsert(record);
         }
         remainingRetries = maxRetries;
+        LOG.trace("Completed handling record");
     }
 
     private void handleDelete(SinkRecord record) {

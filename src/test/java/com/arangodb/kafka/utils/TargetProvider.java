@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -58,10 +59,12 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                         return Arrays.asList(
                                 new ParamSupplier<>(ArangoCollection.class, target::getCollection),
                                 new ParamSupplier<>(Producer.class, () -> target),
+                                new ParamSupplier<>(Map.class, target::getDlqRecords),
                                 (BeforeTestExecutionCallback) extensionContext -> {
                                     target.init();
                                     connectClient.createConnector(target.getConfig());
                                     assertThat(target.getCollection().count().getCount()).isEqualTo(0L);
+                                    assertThat(target.getDlqRecords().size()).isEqualTo(0L);
                                 },
                                 (AfterTestExecutionCallback) extensionContext -> {
                                     connectClient.deleteConnector(target.getName());
