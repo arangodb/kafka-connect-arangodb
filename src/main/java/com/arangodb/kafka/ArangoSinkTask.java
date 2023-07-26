@@ -49,6 +49,7 @@ public class ArangoSinkTask extends SinkTask {
 
     private int maxRetries;
     private int remainingRetries;
+    private int retryBackoffMs;
 
     @Override
     public String version() {
@@ -71,9 +72,9 @@ public class ArangoSinkTask extends SinkTask {
         if (reporter == null) {
             LOG.warn("Errant record reporter not configured.");
         }
+        retryBackoffMs = config.getRetryBackoffMs();
         maxRetries = config.getMaxRetries();
         remainingRetries = maxRetries;
-        context.timeout(config.getRetryBackoffMs());
 
         config.logUnused();
     }
@@ -89,6 +90,7 @@ public class ArangoSinkTask extends SinkTask {
             try {
                 handleRecord(record);
             } catch (RetriableException e) {
+                context.timeout(retryBackoffMs);
                 throw e;
             } catch (Exception e) {
                 if (reporter != null) {
