@@ -27,6 +27,7 @@ import com.arangodb.model.DocumentCreateOptions;
 import com.arangodb.model.DocumentDeleteOptions;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -50,6 +51,7 @@ public class ArangoSinkTask extends SinkTask {
     private int maxRetries;
     private int remainingRetries;
     private int retryBackoffMs;
+    private boolean tolerateTransientErrors;
 
     @Override
     public String version() {
@@ -75,6 +77,7 @@ public class ArangoSinkTask extends SinkTask {
         retryBackoffMs = config.getRetryBackoffMs();
         maxRetries = config.getMaxRetries();
         remainingRetries = maxRetries;
+        tolerateTransientErrors = config.tolerateTransientErrors();
 
         config.logUnused();
     }
@@ -88,30 +91,22 @@ public class ArangoSinkTask extends SinkTask {
         LOG.trace("Handling {} record(s)", records.size());
         for (SinkRecord record : records) {
             try {
-                handleRecord(record);
-            } catch (RetriableException e) {
-                context.timeout(retryBackoffMs);
-                throw e;
-            } catch (Exception e) {
-                if (reporter != null) {
-                    LOG.debug("Reporting exception to DLQ:", e);
-                    reporter.report(record, e);
+                LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+                if (record.key() != null && record.value() == null) {
+                    handleDelete(record);
                 } else {
-                    throw e;
+                    handleInsert(record);
+                }
+                remainingRetries = maxRetries;
+                LOG.trace("Completed handling record");
+            } catch (Exception e) {
+                if (isFatalException(e)) {
+                    reportException(record, e);
+                } else {
+                    handleTransientException(record, e);
                 }
             }
         }
-    }
-
-    private void handleRecord(SinkRecord record) {
-        LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-        if (record.key() != null && record.value() == null) {
-            handleDelete(record);
-        } else {
-            handleInsert(record);
-        }
-        remainingRetries = maxRetries;
-        LOG.trace("Completed handling record");
     }
 
     private void handleDelete(SinkRecord record) {
@@ -125,45 +120,67 @@ public class ArangoSinkTask extends SinkTask {
             LOG.trace("Deleting document: {}", key);
             col.deleteDocument(key, deleteOptions);
         } catch (ArangoDBException e) {
-            if (e.getResponseCode() == 404) {
-                if (e.getErrorNum() == 1202) {
-                    // Response: 404, Error: 1202 - document not found
-                    LOG.trace("Deleting document not found: {}", key);
-                } else {
-                    throw new ConnectException(e);
-                }
+            if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
+                // Response: 404, Error: 1202 - document not found
+                LOG.trace("Deleting document not found: {}", key);
             } else {
-                handleRetriableException(new ConnectException(e));
+                throw e;
             }
-        } catch (Exception e) {
-            handleRetriableException(new ConnectException(e));
         }
     }
 
     private void handleInsert(SinkRecord record) {
         ObjectNode doc = converter.convert(record);
         LOG.trace("Inserting document: {}", doc.get("_key"));
-        try {
-            col.insertDocument(doc, createOptions);
-        } catch (ArangoDBException e) {
-            Integer respCode = e.getResponseCode();
-            if (respCode == 400 || respCode == 404 || respCode == 409 || respCode == 412) {
-                throw new ConnectException(e);
-            } else {
-                handleRetriableException(new ConnectException(e));
+        col.insertDocument(doc, createOptions);
+    }
+
+    private boolean isFatalException(Exception ex) {
+        if (ex instanceof DataException) {
+            return true;
+        }
+
+        if (ex instanceof ArangoDBException) {
+            ArangoDBException e = (ArangoDBException) ex;
+            Integer responseCode = e.getResponseCode();
+            if (responseCode == null || responseCode < 400 || responseCode >= 500) {
+                return false;
             }
-        } catch (Exception e) {
-            handleRetriableException(new ConnectException(e));
+
+            Integer errorNum = e.getErrorNum();
+            return errorNum != 18 &&        // lock timeout
+                    errorNum != 1004 &&     // read only, i.e. not enough replicas for write-concern
+                    errorNum != 1429 &&     // not enough replicas for write-concern
+                    errorNum != 1200 &&     // write-write conflicts
+                    errorNum != 21004 &&    // queue time violated
+                    responseCode != 408 &&  // request timeout
+                    responseCode != 420;    // too many requests
+        }
+
+        return false;
+    }
+
+    private void reportException(SinkRecord record, Exception e) {
+        if (reporter != null) {
+            LOG.debug("Reporting exception to DLQ:", e);
+            reporter.report(record, e);
+            remainingRetries = maxRetries;
+        } else {
+            throw new ConnectException(e);
         }
     }
 
-    private void handleRetriableException(ConnectException e) {
+    private void handleTransientException(SinkRecord record, Exception e) {
         if (remainingRetries > 0) {
             remainingRetries--;
+            context.timeout(retryBackoffMs);
             throw new RetriableException(e);
         } else {
-            remainingRetries = maxRetries;
-            throw e;
+            if (tolerateTransientErrors) {
+                reportException(record, e);
+            } else {
+                throw new ConnectException(e);
+            }
         }
     }
 

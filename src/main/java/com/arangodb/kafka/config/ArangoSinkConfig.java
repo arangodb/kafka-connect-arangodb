@@ -640,8 +640,10 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getInt(RETRY_BACKOFF_MS);
     }
 
-    public TransientErrorsTolerance getTransientErrorsTolerance() {
-        return TransientErrorsTolerance.valueOf(getString(TRANSIENT_ERRORS_TOLERANCE).toUpperCase(Locale.ROOT));
+    public boolean tolerateTransientErrors() {
+        TransientErrorsTolerance value = TransientErrorsTolerance.valueOf(
+                getString(TRANSIENT_ERRORS_TOLERANCE).toUpperCase(Locale.ROOT));
+        return TransientErrorsTolerance.ALL.equals(value);
     }
 
     List<HostDescription> getEndpoints() {
