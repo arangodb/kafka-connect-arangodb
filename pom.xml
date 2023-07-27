@@ -213,6 +213,12 @@
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
             </dependency>
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>1.14.5</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
