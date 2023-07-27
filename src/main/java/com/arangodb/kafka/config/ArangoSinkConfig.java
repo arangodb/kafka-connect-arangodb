@@ -62,6 +62,11 @@ public class ArangoSinkConfig extends AbstractConfig {
         UPDATE
     }
 
+    public enum TransientErrorsTolerance {
+        ALL,
+        NONE
+    }
+
     //region Connection
     private static final String CONNECTION_GROUP = "Connection";
     private static final String CONNECTION_PREFIX = "connection.";
@@ -187,6 +192,29 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String DELETE_ENABLED_DOC = "Whether to enable delete behavior when processing tombstones.";
     private static final String DELETE_ENABLED_DISPLAY = "Enable deletes";
     //endregion
+
+    // region retries
+    private static final String RETRIES_GROUP = "Retries";
+    public static final String MAX_RETRIES = "max.retries";
+    private static final int MAX_RETRIES_DEFAULT = 10;
+    private static final String MAX_RETRIES_DOC =
+            "The maximum number of times to retry on errors before failing the task.";
+    private static final String MAX_RETRIES_DISPLAY = "Maximum Retries";
+
+    public static final String RETRY_BACKOFF_MS = "retry.backoff.ms";
+    private static final int RETRY_BACKOFF_MS_DEFAULT = 3000;
+    private static final String RETRY_BACKOFF_MS_DOC =
+            "The time in milliseconds to wait following an error before a retry attempt is made.";
+    private static final String RETRY_BACKOFF_MS_DISPLAY = "Retry Backoff (millis)";
+
+    public static final String TRANSIENT_ERRORS_TOLERANCE = "transient.errors.tolerance";
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DEFAULT = TransientErrorsTolerance.NONE.toString();
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DOC =
+            "Whether transient errors (after potential failed retries) will be tolerated:\n"
+                    + "``none``: errors will cause a connector task failure\n"
+                    + "``all``: errors will be recorded in the DLQ";
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DISPLAY = "Transient Errors Tolerance";
+    // endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
 
@@ -444,30 +472,43 @@ public class ArangoSinkConfig extends AbstractConfig {
             )
             //endregion
 
-
-//            .define(
-//                    CONNECTION_ATTEMPTS,
-//                    ConfigDef.Type.INT,
-//                    CONNECTION_ATTEMPTS_DEFAULT,
-//                    ConfigDef.Range.atLeast(1),
-//                    ConfigDef.Importance.LOW,
-//                    CONNECTION_ATTEMPTS_DOC,
-//                    CONNECTION_GROUP,
-//                    5,
-//                    ConfigDef.Width.SHORT,
-//                    CONNECTION_ATTEMPTS_DISPLAY
-//            ).define(
-//                    CONNECTION_BACKOFF,
-//                    ConfigDef.Type.LONG,
-//                    CONNECTION_BACKOFF_DEFAULT,
-//                    ConfigDef.Importance.LOW,
-//                    CONNECTION_BACKOFF_DOC,
-//                    CONNECTION_GROUP,
-//                    6,
-//                    ConfigDef.Width.SHORT,
-//                    CONNECTION_BACKOFF_DISPLAY
-//            )
-
+            // region retries
+            .define(
+                    MAX_RETRIES,
+                    ConfigDef.Type.INT,
+                    MAX_RETRIES_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    MAX_RETRIES_DOC,
+                    RETRIES_GROUP,
+                    1,
+                    ConfigDef.Width.SHORT,
+                    MAX_RETRIES_DISPLAY
+            )
+            .define(
+                    RETRY_BACKOFF_MS,
+                    ConfigDef.Type.INT,
+                    RETRY_BACKOFF_MS_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    RETRY_BACKOFF_MS_DOC,
+                    RETRIES_GROUP,
+                    2,
+                    ConfigDef.Width.SHORT,
+                    RETRY_BACKOFF_MS_DISPLAY
+            )
+            .define(
+                    TRANSIENT_ERRORS_TOLERANCE,
+                    ConfigDef.Type.STRING,
+                    TRANSIENT_ERRORS_TOLERANCE_DEFAULT,
+                    new EnumValidator(TransientErrorsTolerance.class),
+                    ConfigDef.Importance.MEDIUM,
+                    TRANSIENT_ERRORS_TOLERANCE_DOC,
+                    RETRIES_GROUP,
+                    3,
+                    ConfigDef.Width.MEDIUM,
+                    TRANSIENT_ERRORS_TOLERANCE_DISPLAY,
+                    new EnumRecommender(TransientErrorsTolerance.class)
+            )
+            //endregion
 
 //            // Writes
 //            .define(
@@ -480,105 +521,6 @@ public class ArangoSinkConfig extends AbstractConfig {
 //                    2,
 //                    ConfigDef.Width.SHORT,
 //                    BATCH_SIZE_DISPLAY
-//            )
-//            .define(
-//                    TABLE_TYPES_CONFIG,
-//                    ConfigDef.Type.LIST,
-//                    TABLE_TYPES_DEFAULT,
-//                    TABLE_TYPES_RECOMMENDER,
-//                    ConfigDef.Importance.LOW,
-//                    TABLE_TYPES_DOC,
-//                    WRITES_GROUP,
-//                    4,
-//                    ConfigDef.Width.MEDIUM,
-//                    TABLE_TYPES_DISPLAY
-//            )
-
-
-//            // Data Mapping
-//            .define(
-//                    TABLE_NAME_FORMAT,
-//                    ConfigDef.Type.STRING,
-//                    TABLE_NAME_FORMAT_DEFAULT,
-//                    new ConfigDef.NonEmptyString(),
-//                    ConfigDef.Importance.MEDIUM,
-//                    TABLE_NAME_FORMAT_DOC,
-//                    DATAMAPPING_GROUP,
-//                    1,
-//                    ConfigDef.Width.LONG,
-//                    TABLE_NAME_FORMAT_DISPLAY
-//            )
-//            .define(
-//                    PK_MODE,
-//                    ConfigDef.Type.STRING,
-//                    PK_MODE_DEFAULT,
-//                    EnumValidator.in(PrimaryKeyMode.values()),
-//                    ConfigDef.Importance.HIGH,
-//                    PK_MODE_DOC,
-//                    DATAMAPPING_GROUP,
-//                    2,
-//                    ConfigDef.Width.MEDIUM,
-//                    PK_MODE_DISPLAY,
-//                    PrimaryKeyModeRecommender.INSTANCE
-//            )
-//            .define(
-//                    PK_FIELDS,
-//                    ConfigDef.Type.LIST,
-//                    PK_FIELDS_DEFAULT,
-//                    ConfigDef.Importance.MEDIUM,
-//                    PK_FIELDS_DOC,
-//                    DATAMAPPING_GROUP,
-//                    3,
-//                    ConfigDef.Width.LONG, PK_FIELDS_DISPLAY
-//            )
-//            .define(
-//                    FIELDS_WHITELIST,
-//                    ConfigDef.Type.LIST,
-//                    FIELDS_WHITELIST_DEFAULT,
-//                    ConfigDef.Importance.MEDIUM,
-//                    FIELDS_WHITELIST_DOC,
-//                    DATAMAPPING_GROUP,
-//                    4,
-//                    ConfigDef.Width.LONG,
-//                    FIELDS_WHITELIST_DISPLAY
-//            ).define(
-//                    DB_TIMEZONE_CONFIG,
-//                    ConfigDef.Type.STRING,
-//                    DB_TIMEZONE_DEFAULT,
-//                    TimeZoneValidator.INSTANCE,
-//                    ConfigDef.Importance.MEDIUM,
-//                    DB_TIMEZONE_CONFIG_DOC,
-//                    DATAMAPPING_GROUP,
-//                    5,
-//                    ConfigDef.Width.MEDIUM,
-//                    DB_TIMEZONE_CONFIG_DISPLAY
-//            )
-
-
-//            // Retries
-//            .define(
-//                    MAX_RETRIES,
-//                    ConfigDef.Type.INT,
-//                    MAX_RETRIES_DEFAULT,
-//                    NON_NEGATIVE_INT_VALIDATOR,
-//                    ConfigDef.Importance.MEDIUM,
-//                    MAX_RETRIES_DOC,
-//                    RETRIES_GROUP,
-//                    1,
-//                    ConfigDef.Width.SHORT,
-//                    MAX_RETRIES_DISPLAY
-//            )
-//            .define(
-//                    RETRY_BACKOFF_MS,
-//                    ConfigDef.Type.INT,
-//                    RETRY_BACKOFF_MS_DEFAULT,
-//                    NON_NEGATIVE_INT_VALIDATOR,
-//                    ConfigDef.Importance.MEDIUM,
-//                    RETRY_BACKOFF_MS_DOC,
-//                    RETRIES_GROUP,
-//                    2,
-//                    ConfigDef.Width.SHORT,
-//                    RETRY_BACKOFF_MS_DISPLAY
 //            )
             ;
 
@@ -688,6 +630,20 @@ public class ArangoSinkConfig extends AbstractConfig {
 
     public boolean isDeleteEnabled() {
         return getBoolean(DELETE_ENABLED);
+    }
+
+    public int getMaxRetries() {
+        return getInt(MAX_RETRIES);
+    }
+
+    public int getRetryBackoffMs() {
+        return getInt(RETRY_BACKOFF_MS);
+    }
+
+    public boolean tolerateTransientErrors() {
+        TransientErrorsTolerance value = TransientErrorsTolerance.valueOf(
+                getString(TRANSIENT_ERRORS_TOLERANCE).toUpperCase(Locale.ROOT));
+        return TransientErrorsTolerance.ALL.equals(value);
     }
 
     List<HostDescription> getEndpoints() {
