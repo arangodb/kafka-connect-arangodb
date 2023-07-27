@@ -62,6 +62,11 @@ public class ArangoSinkConfig extends AbstractConfig {
         UPDATE
     }
 
+    public enum TransientErrorsTolerance {
+        ALL,
+        NONE
+    }
+
     //region Connection
     private static final String CONNECTION_GROUP = "Connection";
     private static final String CONNECTION_PREFIX = "connection.";
@@ -201,6 +206,14 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String RETRY_BACKOFF_MS_DOC =
             "The time in milliseconds to wait following an error before a retry attempt is made.";
     private static final String RETRY_BACKOFF_MS_DISPLAY = "Retry Backoff (millis)";
+
+    public static final String TRANSIENT_ERRORS_TOLERANCE = "transient.errors.tolerance";
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DEFAULT = TransientErrorsTolerance.NONE.toString();
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DOC =
+            "Whether transient errors (after potential failed retries) will be tolerated:\n"
+                    + "``none``: errors will cause a connector task failure\n"
+                    + "``all``: errors will be recorded in the DLQ";
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DISPLAY = "Transient Errors Tolerance";
     // endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
@@ -482,6 +495,19 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     RETRY_BACKOFF_MS_DISPLAY
             )
+            .define(
+                    TRANSIENT_ERRORS_TOLERANCE,
+                    ConfigDef.Type.STRING,
+                    TRANSIENT_ERRORS_TOLERANCE_DEFAULT,
+                    new EnumValidator(TransientErrorsTolerance.class),
+                    ConfigDef.Importance.MEDIUM,
+                    TRANSIENT_ERRORS_TOLERANCE_DOC,
+                    RETRIES_GROUP,
+                    3,
+                    ConfigDef.Width.MEDIUM,
+                    TRANSIENT_ERRORS_TOLERANCE_DISPLAY,
+                    new EnumRecommender(TransientErrorsTolerance.class)
+            )
             //endregion
 
 //            // Writes
@@ -612,6 +638,10 @@ public class ArangoSinkConfig extends AbstractConfig {
 
     public int getRetryBackoffMs() {
         return getInt(RETRY_BACKOFF_MS);
+    }
+
+    public TransientErrorsTolerance getTransientErrorsTolerance() {
+        return TransientErrorsTolerance.valueOf(getString(TRANSIENT_ERRORS_TOLERANCE).toUpperCase(Locale.ROOT));
     }
 
     List<HostDescription> getEndpoints() {
