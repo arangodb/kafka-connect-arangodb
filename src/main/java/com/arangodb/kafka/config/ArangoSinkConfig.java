@@ -646,6 +646,10 @@ public class ArangoSinkConfig extends AbstractConfig {
         return TransientErrorsTolerance.ALL.equals(value);
     }
 
+    public String getUser() {
+        return getString(CONNECTION_USER);
+    }
+
     List<HostDescription> getEndpoints() {
         return getList(CONNECTION_ENDPOINTS).stream()
                 .map(HostDescription::parse)

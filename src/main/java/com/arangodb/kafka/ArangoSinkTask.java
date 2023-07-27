@@ -19,6 +19,7 @@
 package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
+import com.arangodb.entity.Permissions;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
@@ -55,6 +56,7 @@ public class ArangoSinkTask extends SinkTask {
         config.logUnused();
 
         testConnectivity();
+        testPermissions(config.getUser());
     }
 
     @Override
@@ -85,4 +87,10 @@ public class ArangoSinkTask extends SinkTask {
         throw new ConnectException("Could not connect to ArangoDB.", lastException);
     }
 
+    private void testPermissions(String user) {
+        Permissions permissions = col.getPermissions(user);
+        if (!Permissions.RW.equals(permissions)) {
+            throw new ConnectException("User [" + user + "] has no write permissions for target collection [" + col.name() + "]");
+        }
+    }
 }
