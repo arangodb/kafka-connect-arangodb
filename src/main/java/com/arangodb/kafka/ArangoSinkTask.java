@@ -20,6 +20,7 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.config.ArangoSinkConfig;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -52,6 +53,8 @@ public class ArangoSinkTask extends SinkTask {
         }
         writer = new ArangoWriter(config, col, reporter, context);
         config.logUnused();
+
+        testConnectivity();
     }
 
     @Override
@@ -66,4 +69,20 @@ public class ArangoSinkTask extends SinkTask {
             col.db().arango().shutdown();
         }
     }
+
+    private void testConnectivity() {
+        Exception lastException = null;
+        for (int i = 0; i < 10; i++) {
+            try {
+                String version = col.db().getVersion().getVersion();
+                LOG.debug("Connected to ArangoDB: {}", version);
+                return;
+            } catch (Exception e) {
+                LOG.warn("Got exception while testing connectivity to ArangoDB.", e);
+                lastException = e;
+            }
+        }
+        throw new ConnectException("Could not connect to ArangoDB.", lastException);
+    }
+
 }
