@@ -10,6 +10,11 @@ Package:
 mvn package
 ```
 
+Create docker network (once until reboot):
+```shell
+docker/create_network.sh
+```
+
 Start db:
 ```shell
 ./docker/start_db.sh
