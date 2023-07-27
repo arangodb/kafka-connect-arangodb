@@ -21,25 +21,41 @@ package com.arangodb.kafka;
 import com.arangodb.ArangoCollection;
 import com.arangodb.entity.BaseDocument;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.write.OverwriteModeIgnoreTarget;
-import com.arangodb.kafka.target.write.OverwriteModeReplaceTarget;
-import com.arangodb.kafka.target.write.OverwriteModeUpdateNoMergeTarget;
-import com.arangodb.kafka.target.write.OverwriteModeUpdateTarget;
+import com.arangodb.kafka.target.write.*;
 import com.arangodb.kafka.utils.KafkaTest;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import static com.arangodb.kafka.utils.Utils.awaitCount;
-import static com.arangodb.kafka.utils.Utils.map;
+import java.util.Map;
+
+import static com.arangodb.kafka.utils.KafkaUtils.extractHeaders;
+import static com.arangodb.kafka.utils.Utils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 class OverwriteModeIT {
 
+    @KafkaTest(OverwriteModeConflictTarget.class)
+    void testWriteConflict(ArangoCollection col, Producer producer, Map<String, ConsumerRecord<String, String>> dlq) {
+        producer.produce("key", map().add("value", "foo"));
+        producer.produce("key", map().add("value", "bar"));
+        producer.produce("flush", map());
 
-//    @KafkaTest(OverwriteModeConflictTarget.class)
-//    void testWriteConflict(ArangoCollection col, Producer producer) {
-//        // TODO: test with DLQ
-//    }
+        awaitCount(col, 2);
+        assertThat(col.documentExists("key")).isTrue();
+        assertThat(col.documentExists("flush")).isTrue();
+
+        awaitDlq(dlq, 1);
+        ConsumerRecord<String, String> dlqMsg = dlq.get("key");
+        assertThat(dlqMsg).isNotNull();
+        Map<String, String> headers = extractHeaders(dlqMsg);
+        assertThat(headers)
+                .containsEntry("__connect.errors.exception.class.name", "com.arangodb.ArangoDBException")
+                .hasEntrySatisfying("__connect.errors.exception.message", v ->
+                        assertThat(v)
+                                .contains("Response: 409, Error: 1210 - unique constraint violated")
+                                .contains("conflicting key"));
+    }
 
     @KafkaTest(OverwriteModeIgnoreTarget.class)
     void testWriteIgnore(ArangoCollection col, Producer producer) {

@@ -17,4 +17,8 @@ public class OverwriteModeConflictTarget extends BaseWriteTarget {
         return cfg;
     }
 
+    @Override
+    public boolean supportsDLQ() {
+        return true;
+    }
 }
