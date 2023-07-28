@@ -42,7 +42,6 @@ import java.util.stream.Collectors;
 
 public class ArangoSinkConfig extends AbstractConfig {
     public static final int MONITOR_REQUEST_TIMEOUT_MS = 10_000;
-    public static final int ACQUIRE_HOST_LIST_INTERVAL_MS = 60_000;
 
     public enum Protocol {
         VST,
@@ -95,11 +94,16 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_COLLECTION_DOC = "Target collection name.";
     private static final String CONNECTION_COLLECTION_DISPLAY = "Collection";
 
-    public static final String CONNECTION_ACQUIRE_HOST_LIST = CONNECTION_PREFIX + "acquireHostList";
-    private static final boolean CONNECTION_ACQUIRE_HOST_LIST_DEFAULT = false;
-    private static final String CONNECTION_ACQUIRE_HOST_LIST_DOC = "Periodically acquire the list of all known " +
+    public static final String CONNECTION_ACQUIRE_HOST_LIST_ENABLED = CONNECTION_PREFIX + "acquireHostList.enabled";
+    private static final boolean CONNECTION_ACQUIRE_HOST_LIST_ENABLED_DEFAULT = false;
+    private static final String CONNECTION_ACQUIRE_HOST_LIST_ENABLED_DOC = "Periodically acquire the list of all known " +
             "ArangoDB hosts in the cluster and trigger tasks reconfiguration in case of changes.";
-    private static final String CONNECTION_ACQUIRE_HOST_LIST_DISPLAY = "Acquire Host List";
+    private static final String CONNECTION_ACQUIRE_HOST_LIST_ENABLED_DISPLAY = "Acquire Host List";
+
+    public static final String CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS = CONNECTION_PREFIX + "acquireHostList.interval.ms";
+    private static final int CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DEFAULT = 60_000;
+    private static final String CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DOC = "Interval for acquiring the host list.";
+    private static final String CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DISPLAY = "Acquire Host List Interval";
 
     public static final String CONNECTION_PROTOCOL = CONNECTION_PREFIX + "protocol";
     private static final String CONNECTION_PROTOCOL_DEFAULT = Protocol.HTTP2.toString();
@@ -110,51 +114,56 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_CONTENT_TYPE_DEFAULT = ContentType.JSON.toString();
     private static final String CONNECTION_CONTENT_TYPE_DOC = "Communication content type.";
     private static final String CONNECTION_CONTENT_TYPE_DISPLAY = "Content Type";
+    // endregion
 
-    public static final String CONNECTION_SSL_ENABLED = CONNECTION_PREFIX + "ssl.enabled";
+    // region SSL
+    private static final String SSL_GROUP = "SSL";
+    private static final String SSL_PREFIX = "ssl.";
+
+    public static final String CONNECTION_SSL_ENABLED = SSL_PREFIX + "enabled";
     private static final boolean CONNECTION_SSL_ENABLED_DEFAULT = false;
     private static final String CONNECTION_SSL_ENABLED_DOC = "SSL secured driver connection.";
     private static final String CONNECTION_SSL_ENABLED_DISPLAY = "SSL enabled";
 
-    public static final String CONNECTION_SSL_CERT_VALUE = CONNECTION_PREFIX + "ssl.cert.value";
+    public static final String CONNECTION_SSL_CERT_VALUE = SSL_PREFIX + "cert.value";
     private static final String CONNECTION_SSL_CERT_VALUE_DOC = "Base64 encoded SSL certificate.";
     private static final String CONNECTION_SSL_CERT_VALUE_DISPLAY = "SSL certificate";
 
-    public static final String CONNECTION_SSL_CERT_TYPE = CONNECTION_PREFIX + "ssl.cert.type";
+    public static final String CONNECTION_SSL_CERT_TYPE = SSL_PREFIX + "cert.type";
     private static final String CONNECTION_SSL_CERT_TYPE_DEFAULT = "X.509";
     private static final String CONNECTION_SSL_CERT_TYPE_DOC = "Certificate type.";
     private static final String CONNECTION_SSL_CERT_TYPE_DISPLAY = "Certificate type";
 
-    public static final String CONNECTION_SSL_CERT_ALIAS = CONNECTION_PREFIX + "ssl.cert.alias";
+    public static final String CONNECTION_SSL_CERT_ALIAS = SSL_PREFIX + "cert.alias";
     private static final String CONNECTION_SSL_CERT_ALIAS_DEFAULT = "arangodb";
     private static final String CONNECTION_SSL_CERT_ALIAS_DOC = "Certificate alias name.";
     private static final String CONNECTION_SSL_CERT_ALIAS_DISPLAY = "Certificate alias";
 
-    public static final String CONNECTION_SSL_ALGORITHM = CONNECTION_PREFIX + "ssl.algorithm";
+    public static final String CONNECTION_SSL_ALGORITHM = SSL_PREFIX + "algorithm";
     private static final String CONNECTION_SSL_ALGORITHM_DEFAULT = "SunX509";
     private static final String CONNECTION_SSL_ALGORITHM_DOC = "Trust manager algorithm.";
     private static final String CONNECTION_SSL_ALGORITHM_DISPLAY = "Trust manager algorithm";
 
-    public static final String CONNECTION_SSL_KEYSTORE_TYPE = CONNECTION_PREFIX + "ssl.keystore.type";
+    public static final String CONNECTION_SSL_KEYSTORE_TYPE = SSL_PREFIX + "keystore.type";
     private static final String CONNECTION_SSL_KEYSTORE_TYPE_DEFAULT = "jks";
     private static final String CONNECTION_SSL_KEYSTORE_TYPE_DOC = "Keystore type.";
     private static final String CONNECTION_SSL_KEYSTORE_TYPE_DISPLAY = "Keystore type";
 
-    public static final String CONNECTION_SSL_PROTOCOL = CONNECTION_PREFIX + "ssl.protocol";
+    public static final String CONNECTION_SSL_PROTOCOL = SSL_PREFIX + "protocol";
     private static final String CONNECTION_SSL_PROTOCOL_DEFAULT = "TLS";
     private static final String CONNECTION_SSL_PROTOCOL_DOC = "SSLContext protocol.";
     private static final String CONNECTION_SSL_PROTOCOL_DISPLAY = "SSL protocol";
 
-    public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION = CONNECTION_PREFIX + "ssl.hostname.verification";
+    public static final String CONNECTION_SSL_HOSTNAME_VERIFICATION = SSL_PREFIX + "hostname.verification";
     private static final boolean CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT = true;
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC = "SSL hostname verification.";
     private static final String CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY = "SSL hostname verification";
 
-    public static final String CONNECTION_SSL_TRUSTSTORE_LOCATION = CONNECTION_PREFIX + "ssl.truststore.location";
+    public static final String CONNECTION_SSL_TRUSTSTORE_LOCATION = SSL_PREFIX + "truststore.location";
     private static final String CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC = "The location of the trust store file.";
     private static final String CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY = "Truststore location";
 
-    public static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD = CONNECTION_PREFIX + "ssl.truststore.password";
+    public static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD = SSL_PREFIX + "truststore.password";
     private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC = "The password for the trust store file.";
     private static final String CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY = "Truststore password";
     //endregion
@@ -199,8 +208,9 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String DELETE_ENABLED_DISPLAY = "Enable deletes";
     //endregion
 
-    // region retries
+    //region retries
     private static final String RETRIES_GROUP = "Retries";
+
     public static final String MAX_RETRIES = "max.retries";
     private static final int MAX_RETRIES_DEFAULT = 10;
     private static final String MAX_RETRIES_DOC =
@@ -220,7 +230,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     + "``none``: errors will cause a connector task failure\n"
                     + "``all``: errors will be recorded in the DLQ";
     private static final String TRANSIENT_ERRORS_TOLERANCE_DISPLAY = "Transient Errors Tolerance";
-    // endregion
+    //endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
 
@@ -281,15 +291,26 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_COLLECTION_DISPLAY
             )
             .define(
-                    CONNECTION_ACQUIRE_HOST_LIST,
+                    CONNECTION_ACQUIRE_HOST_LIST_ENABLED,
                     ConfigDef.Type.BOOLEAN,
-                    CONNECTION_ACQUIRE_HOST_LIST_DEFAULT,
+                    CONNECTION_ACQUIRE_HOST_LIST_ENABLED_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
-                    CONNECTION_ACQUIRE_HOST_LIST_DOC,
+                    CONNECTION_ACQUIRE_HOST_LIST_ENABLED_DOC,
                     CONNECTION_GROUP,
                     6,
                     ConfigDef.Width.SHORT,
-                    CONNECTION_ACQUIRE_HOST_LIST_DISPLAY
+                    CONNECTION_ACQUIRE_HOST_LIST_ENABLED_DISPLAY
+            )
+            .define(
+                    CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS,
+                    ConfigDef.Type.INT,
+                    CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DOC,
+                    CONNECTION_GROUP,
+                    7,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DISPLAY
             )
             .define(
                     CONNECTION_PROTOCOL,
@@ -299,7 +320,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_PROTOCOL_DOC,
                     CONNECTION_GROUP,
-                    7,
+                    8,
                     ConfigDef.Width.SHORT,
                     CONNECTION_PROTOCOL_DISPLAY,
                     new EnumRecommender(Protocol.class)
@@ -312,19 +333,22 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     CONNECTION_CONTENT_TYPE_DOC,
                     CONNECTION_GROUP,
-                    8,
+                    9,
                     ConfigDef.Width.SHORT,
                     CONNECTION_CONTENT_TYPE_DISPLAY,
                     new EnumRecommender(ContentType.class)
             )
+            //endregion
+
+            //region SSL
             .define(
                     CONNECTION_SSL_ENABLED,
                     ConfigDef.Type.BOOLEAN,
                     CONNECTION_SSL_ENABLED_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_ENABLED_DOC,
-                    CONNECTION_GROUP,
-                    9,
+                    SSL_GROUP,
+                    1,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_ENABLED_DISPLAY
             )
@@ -334,8 +358,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     null,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_CERT_VALUE_DOC,
-                    CONNECTION_GROUP,
-                    10,
+                    SSL_GROUP,
+                    2,
                     ConfigDef.Width.LONG,
                     CONNECTION_SSL_CERT_VALUE_DISPLAY
             )
@@ -345,8 +369,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_SSL_CERT_TYPE_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_CERT_TYPE_DOC,
-                    CONNECTION_GROUP,
-                    11,
+                    SSL_GROUP,
+                    3,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_CERT_TYPE_DISPLAY
             )
@@ -356,8 +380,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_SSL_CERT_ALIAS_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_CERT_ALIAS_DOC,
-                    CONNECTION_GROUP,
-                    12,
+                    SSL_GROUP,
+                    4,
                     ConfigDef.Width.MEDIUM,
                     CONNECTION_SSL_CERT_ALIAS_DISPLAY
             )
@@ -367,8 +391,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_SSL_ALGORITHM_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_ALGORITHM_DOC,
-                    CONNECTION_GROUP,
-                    13,
+                    SSL_GROUP,
+                    5,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_ALGORITHM_DISPLAY
             )
@@ -378,8 +402,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_SSL_KEYSTORE_TYPE_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_KEYSTORE_TYPE_DOC,
-                    CONNECTION_GROUP,
-                    14,
+                    SSL_GROUP,
+                    6,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_KEYSTORE_TYPE_DISPLAY
             )
@@ -389,8 +413,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_SSL_PROTOCOL_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_PROTOCOL_DOC,
-                    CONNECTION_GROUP,
-                    15,
+                    SSL_GROUP,
+                    7,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_PROTOCOL_DISPLAY
             )
@@ -400,8 +424,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_SSL_HOSTNAME_VERIFICATION_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC,
-                    CONNECTION_GROUP,
-                    16,
+                    SSL_GROUP,
+                    8,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY
             )
@@ -411,8 +435,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     null,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC,
-                    CONNECTION_GROUP,
-                    17,
+                    SSL_GROUP,
+                    9,
                     ConfigDef.Width.LONG,
                     CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY
             )
@@ -422,8 +446,8 @@ public class ArangoSinkConfig extends AbstractConfig {
                     null,
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC,
-                    CONNECTION_GROUP,
-                    18,
+                    SSL_GROUP,
+                    10,
                     ConfigDef.Width.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY
             )
@@ -627,7 +651,7 @@ public class ArangoSinkConfig extends AbstractConfig {
         return createAdbBuilder()
                 .timeout(MONITOR_REQUEST_TIMEOUT_MS)
                 .acquireHostList(true)
-                .acquireHostListInterval(ACQUIRE_HOST_LIST_INTERVAL_MS)
+                .acquireHostListInterval(getInt(CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS))
                 .build();
     }
 
@@ -680,8 +704,12 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getString(CONNECTION_USER);
     }
 
-    public boolean getAcquireHostList() {
-        return getBoolean(CONNECTION_ACQUIRE_HOST_LIST);
+    public boolean isAcquireHostListEnabled() {
+        return getBoolean(CONNECTION_ACQUIRE_HOST_LIST_ENABLED);
+    }
+
+    public int getAcquireHostIntervalMs() {
+        return getInt(CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS);
     }
 
     public Set<HostDescription> getEndpoints() {

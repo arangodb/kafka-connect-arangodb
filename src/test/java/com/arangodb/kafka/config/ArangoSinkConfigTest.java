@@ -33,6 +33,10 @@ class ArangoSinkConfigTest {
                 .isEqualTo(ArangoSinkConfig.OverwriteMode.CONFLICT.toString());
         assertThat(config.getBoolean(ArangoSinkConfig.INSERT_MERGE_OBJECTS)).isTrue();
         assertThat(config.getBoolean(ArangoSinkConfig.DELETE_ENABLED)).isFalse();
+        assertThat(config.getMaxRetries()).isEqualTo(10);
+        assertThat(config.getRetryBackoffMs()).isEqualTo(3000);
+        assertThat(config.isAcquireHostListEnabled()).isFalse();
+        assertThat(config.getAcquireHostIntervalMs()).isEqualTo(60_000);
     }
 
     @Test
