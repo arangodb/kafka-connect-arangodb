@@ -28,11 +28,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class RetryTest {
+class RetryTest {
     private Utils.FluentMap<String, Object> config() {
         return map()
-                .add("key.converter.schemas.enable", "false")
-                .add("value.converter.schemas.enable", "false")
                 .add(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints())
                 .add(ArangoSinkConfig.CONNECTION_COLLECTION, "RetryTest");
     }

@@ -25,11 +25,11 @@ public class HostListMonitor {
     private final ArangoDB adb;
     private final ScheduledExecutorService es;
     private final ConnectorContext context;
-    private final ArangoSinkConfig sinkConfig;
+    private final int acquireHostIntervalMs;
     private volatile Set<HostDescription> endpoints;
 
     public HostListMonitor(ArangoSinkConfig sinkConfig, ConnectorContext context) {
-        this.sinkConfig = sinkConfig;
+        acquireHostIntervalMs = sinkConfig.getAcquireHostIntervalMs();
         endpoints = sinkConfig.getEndpoints();
         adb = sinkConfig.createMonitorClient();
         this.context = context;
@@ -38,8 +38,7 @@ public class HostListMonitor {
 
     void start() {
         updateHostList();
-        int interval = sinkConfig.getAcquireHostIntervalMs();
-        es.scheduleAtFixedRate(this::monitorHosts, interval, interval, TimeUnit.MILLISECONDS);
+        es.scheduleAtFixedRate(this::monitorHosts, acquireHostIntervalMs, acquireHostIntervalMs, TimeUnit.MILLISECONDS);
     }
 
     public Set<HostDescription> getEndpoints() {
