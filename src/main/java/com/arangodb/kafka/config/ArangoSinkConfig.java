@@ -44,6 +44,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ArangoSinkConfig extends AbstractConfig {
+    public static final int MONITOR_REQUEST_TIMEOUT_MS = 10_000;
+    public static final int ACQUIRE_HOST_LIST_INTERVAL_MS = 60_000;
+
     public enum Protocol {
         VST,
         HTTP11,
@@ -94,6 +97,12 @@ public class ArangoSinkConfig extends AbstractConfig {
     public static final String CONNECTION_COLLECTION = CONNECTION_PREFIX + "collection";
     private static final String CONNECTION_COLLECTION_DOC = "Target collection name.";
     private static final String CONNECTION_COLLECTION_DISPLAY = "Collection";
+
+    public static final String CONNECTION_ACQUIRE_HOST_LIST = CONNECTION_PREFIX + "acquireHostList";
+    private static final boolean CONNECTION_ACQUIRE_HOST_LIST_DEFAULT = false;
+    private static final String CONNECTION_ACQUIRE_HOST_LIST_DOC = "Periodically acquire the list of all known " +
+            "ArangoDB hosts in the cluster and trigger tasks reconfiguration in case of changes.";
+    private static final String CONNECTION_ACQUIRE_HOST_LIST_DISPLAY = "Acquire Host List";
 
     public static final String CONNECTION_PROTOCOL = CONNECTION_PREFIX + "protocol";
     private static final String CONNECTION_PROTOCOL_DEFAULT = Protocol.HTTP2.toString();
@@ -275,6 +284,17 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_COLLECTION_DISPLAY
             )
             .define(
+                    CONNECTION_ACQUIRE_HOST_LIST,
+                    ConfigDef.Type.BOOLEAN,
+                    CONNECTION_ACQUIRE_HOST_LIST_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    CONNECTION_ACQUIRE_HOST_LIST_DOC,
+                    CONNECTION_GROUP,
+                    6,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_ACQUIRE_HOST_LIST_DISPLAY
+            )
+            .define(
                     CONNECTION_PROTOCOL,
                     ConfigDef.Type.STRING,
                     CONNECTION_PROTOCOL_DEFAULT,
@@ -282,7 +302,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_PROTOCOL_DOC,
                     CONNECTION_GROUP,
-                    6,
+                    7,
                     ConfigDef.Width.SHORT,
                     CONNECTION_PROTOCOL_DISPLAY,
                     new EnumRecommender(Protocol.class)
@@ -295,7 +315,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     CONNECTION_CONTENT_TYPE_DOC,
                     CONNECTION_GROUP,
-                    7,
+                    8,
                     ConfigDef.Width.SHORT,
                     CONNECTION_CONTENT_TYPE_DISPLAY,
                     new EnumRecommender(ContentType.class)
@@ -307,7 +327,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_ENABLED_DOC,
                     CONNECTION_GROUP,
-                    8,
+                    9,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_ENABLED_DISPLAY
             )
@@ -318,7 +338,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_CERT_VALUE_DOC,
                     CONNECTION_GROUP,
-                    9,
+                    10,
                     ConfigDef.Width.LONG,
                     CONNECTION_SSL_CERT_VALUE_DISPLAY
             )
@@ -329,7 +349,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_CERT_TYPE_DOC,
                     CONNECTION_GROUP,
-                    10,
+                    11,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_CERT_TYPE_DISPLAY
             )
@@ -340,7 +360,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_CERT_ALIAS_DOC,
                     CONNECTION_GROUP,
-                    11,
+                    12,
                     ConfigDef.Width.MEDIUM,
                     CONNECTION_SSL_CERT_ALIAS_DISPLAY
             )
@@ -351,7 +371,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_ALGORITHM_DOC,
                     CONNECTION_GROUP,
-                    12,
+                    13,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_ALGORITHM_DISPLAY
             )
@@ -362,7 +382,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_KEYSTORE_TYPE_DOC,
                     CONNECTION_GROUP,
-                    13,
+                    14,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_KEYSTORE_TYPE_DISPLAY
             )
@@ -373,7 +393,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_PROTOCOL_DOC,
                     CONNECTION_GROUP,
-                    14,
+                    15,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_PROTOCOL_DISPLAY
             )
@@ -384,7 +404,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_HOSTNAME_VERIFICATION_DOC,
                     CONNECTION_GROUP,
-                    15,
+                    16,
                     ConfigDef.Width.SHORT,
                     CONNECTION_SSL_HOSTNAME_VERIFICATION_DISPLAY
             )
@@ -395,7 +415,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_LOCATION_DOC,
                     CONNECTION_GROUP,
-                    16,
+                    17,
                     ConfigDef.Width.LONG,
                     CONNECTION_SSL_TRUSTSTORE_LOCATION_DISPLAY
             )
@@ -406,7 +426,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_PASSWORD_DOC,
                     CONNECTION_GROUP,
-                    17,
+                    18,
                     ConfigDef.Width.MEDIUM,
                     CONNECTION_SSL_TRUSTSTORE_PASSWORD_DISPLAY
             )
@@ -586,12 +606,11 @@ public class ArangoSinkConfig extends AbstractConfig {
         }
     }
 
-    public ArangoCollection createCollection() {
+    private ArangoDB.Builder createAdbBuilder() {
         Password passwd = getPassword(CONNECTION_PASSWORD);
         ArangoDB.Builder builder = new ArangoDB.Builder()
                 .user(getString(CONNECTION_USER))
-                .protocol(getProtocol())
-                .timeout(getInt(INSERT_TIMEOUT));
+                .protocol(getProtocol());
         if (passwd != null) {
             builder.password(passwd.value());
         }
@@ -604,7 +623,21 @@ public class ArangoSinkConfig extends AbstractConfig {
                     .sslContext(createSslContext())
                     .verifyHost(getBoolean(CONNECTION_SSL_HOSTNAME_VERIFICATION));
         }
-        return builder.build()
+        return builder;
+    }
+
+    public ArangoDB createMonitorClient() {
+        return createAdbBuilder()
+                .timeout(MONITOR_REQUEST_TIMEOUT_MS)
+                .acquireHostList(true)
+                .acquireHostListInterval(ACQUIRE_HOST_LIST_INTERVAL_MS)
+                .build();
+    }
+
+    public ArangoCollection createCollection() {
+        return createAdbBuilder()
+                .timeout(getInt(INSERT_TIMEOUT))
+                .build()
                 .db(getString(CONNECTION_DATABASE))
                 .collection(getString(CONNECTION_COLLECTION));
     }
@@ -648,6 +681,10 @@ public class ArangoSinkConfig extends AbstractConfig {
 
     public String getUser() {
         return getString(CONNECTION_USER);
+    }
+
+    public boolean getAcquireHostList() {
+        return getBoolean(CONNECTION_ACQUIRE_HOST_LIST);
     }
 
     List<HostDescription> getEndpoints() {
