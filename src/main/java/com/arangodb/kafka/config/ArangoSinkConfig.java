@@ -37,10 +37,7 @@ import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
-import java.util.Base64;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ArangoSinkConfig extends AbstractConfig {
@@ -687,10 +684,10 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getBoolean(CONNECTION_ACQUIRE_HOST_LIST);
     }
 
-    List<HostDescription> getEndpoints() {
+    public Set<HostDescription> getEndpoints() {
         return getList(CONNECTION_ENDPOINTS).stream()
                 .map(HostDescription::parse)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     private void ensureValidSslConfig() {
