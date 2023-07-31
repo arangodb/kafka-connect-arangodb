@@ -10,6 +10,7 @@ on:
       - 'ChangeLog.md'
       - 'README.md'
       - '.github/**'
+      - 'demo/**'
   pull_request:
     branches:
       - main
@@ -18,6 +19,7 @@ on:
       - 'ChangeLog.md'
       - 'README.md'
       - '.github/**'
+      - 'demo/**'
 
 jobs:
   standalone:
