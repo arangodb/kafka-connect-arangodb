@@ -53,7 +53,7 @@ services:
       - kafka-1
       - kafka-2
     ports:
-      - '18083:8083'
+      - '8083:8083'
     environment:
       CONNECT_BOOTSTRAP_SERVERS: "kafka-0:29092,kafka-1:29092,kafka-2:29092"
       CONNECT_REST_PORT: 8083
@@ -72,7 +72,7 @@ services:
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
       CONNECT_PLUGIN_PATH: /usr/share/java
     volumes:
-      - $PWD/data/kafka-connect-arangodb:/usr/share/java/kafka-connect-arangodb
+      - $PWD/../target:/usr/share/java/kafka-connect-arangodb
       - $PWD/data/confluentinc-kafka-connect-datagen:/usr/share/java/confluentinc-kafka-connect-datagen
 
   kafka-connect-2:
@@ -82,7 +82,7 @@ services:
       - kafka-1
       - kafka-2
     ports:
-      - '28083:8083'
+      - '8183:8083'
     environment:
       CONNECT_BOOTSTRAP_SERVERS: "kafka-0:29092,kafka-1:29092,kafka-2:29092"
       CONNECT_REST_PORT: 8083
@@ -101,7 +101,7 @@ services:
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
       CONNECT_PLUGIN_PATH: /usr/share/java
     volumes:
-      - $PWD/data/kafka-connect-arangodb:/usr/share/java/kafka-connect-arangodb
+      - $PWD/../target:/usr/share/java/kafka-connect-arangodb
       - $PWD/data/confluentinc-kafka-connect-datagen:/usr/share/java/confluentinc-kafka-connect-datagen
 
   redpanda-console:
