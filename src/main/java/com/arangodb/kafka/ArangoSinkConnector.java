@@ -18,6 +18,7 @@
 
 package com.arangodb.kafka;
 
+import com.arangodb.config.HostDescription;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -27,10 +28,7 @@ import org.apache.kafka.connect.sink.SinkConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ArangoSinkConnector extends SinkConnector {
@@ -69,11 +67,18 @@ public class ArangoSinkConnector extends SinkConnector {
 
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
-        String taskEndpoints = hostListMonitor.getEndpoints().stream()
-                .map(e -> e.getHost() + ":" + e.getPort())
-                .collect(Collectors.joining(","));
+        List<HostDescription> endpoints = new ArrayList<>(hostListMonitor.getEndpoints());
+        int rotationDistance = endpoints.size() / maxTasks;
+        if (rotationDistance == 0) {
+            rotationDistance = 1;
+        }
+
         List<Map<String, String>> configs = new ArrayList<>(maxTasks);
         for (int i = 0; i < maxTasks; i++) {
+            Collections.rotate(endpoints, rotationDistance);
+            String taskEndpoints = endpoints.stream()
+                    .map(e -> e.getHost() + ":" + e.getPort())
+                    .collect(Collectors.joining(","));
             Map<String, String> taskCfg = new HashMap<>(config);
             taskCfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, taskEndpoints);
             configs.add(taskCfg);
