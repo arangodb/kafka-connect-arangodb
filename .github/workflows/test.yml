@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - dbg/ci
     paths-ignore:
       - 'docker/**'
       - 'ChangeLog.md'
