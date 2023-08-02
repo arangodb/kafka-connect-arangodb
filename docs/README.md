@@ -16,6 +16,8 @@ The ArangoDB Sink connector includes the following features:
     Key handling
     Delete mode
     Idempotent writes
+    Ordering Guarantees
+    Monitoring
 
 ### At least once delivery
 
@@ -74,7 +76,7 @@ The `_key` of the documents inserted into ArangoDB is derived in the following w
 
 1. use the Kafka record value field `_key` if present and not null, else
 2. use the Kafka record key if not null, else
-3. use the Kafka coordinates (`topic-partition-offset`)
+3. use the Kafka record coordinates (`topic-partition-offset`)
 
 ### Delete mode
 
@@ -86,24 +88,27 @@ Deletes can be enabled with `delete.enabled=true`.
 
 Enabling delete mode does not affect the `insert.overwriteMode`.
 
-
-
-
-
-
-
-
-
-
-
 ### Idempotent writes
+TODO
 
+### Ordering Guarantees
 
+ArangoDB Kafka Sink Connector maintains the order of writes to ArangoDB for the same Kafka record key. That is for Kafka
+records with the same key, the connector will process and write records to ArangoDB in the order it received the
+corresponding Kafka records.
+Note that this is not guaranteed when the document `_key` comes from Kafka record value field `_key`, since the 
+respective Kafka record keys could be different.
 
+There are no ordering guarantees for writes to ArangoDB across Kafka records with different keys or missing keys
+(assigned from Kafka record coordinates).
 
+Note that this is only guaranteed if the corresponding Kafka topic uses a key-based partitioner that assigns the same
+partition to records with the same key. 
+See [Kafka partitioning](https://developer.confluent.io/courses/apache-kafka/partitions/) to learn more.
 
+### Monitoring
 
-### Sequential consistency
-
-updates to a key are written to ArangoDB in order
-
+The Kafka Connect framework exposes basic status information over a REST interface. Fine-grained metrics, including the
+number of processed messages and the rate of processing, are available via JMX. For more information, see
+[Monitoring Kafka Connect and Connectors](https://docs.confluent.io/current/connect/managing/monitoring.html)
+(published by Confluent, also applies to a standard Apache Kafka distribution).
