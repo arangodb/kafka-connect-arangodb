@@ -25,6 +25,11 @@ Start Kafka:
 ./docker/start_kafka.sh
 ```
 
+Start Schema Registry:
+```shell
+./docker/start_schema_registry.sh 
+```
+
 Standalone integration tests:
 ```shell
 mvn integration-test
