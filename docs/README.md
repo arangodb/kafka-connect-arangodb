@@ -10,6 +10,7 @@ Auto-creation of ArangoDB collection is not supported.
 The ArangoDB Sink connector includes the following features:
 
     Delivery Guarantees
+    Retries
     Dead Letter Queue
     Multiple tasks
     Data mapping
@@ -28,6 +29,7 @@ For example, the same record could be delivered multiple times in the following 
 - errors in the communication between the connector and Kafka, preventing to commit offset of already written records
 - abrupt termination of connector task
 
+When restarted, the connector resumes reading from the Kafka topic at an offset prior to where it stopped.
 As a result, at least in the cases mentioned above some records might get written to ArangoDB more than once.
 Even if configured for idempotent writes (e.g. with `insert.overwriteMode=replace`), writing the same record multiple
 times will still update the `_rev` field of the document.
@@ -113,22 +115,27 @@ TODO
 
 ### Ordering Guarantees
 
-ArangoDB Kafka Sink Connector maintains the order of writes to ArangoDB for the same Kafka record key. That is for Kafka
-records with the same key, the connector will process and write records to ArangoDB in the order it received the
-corresponding Kafka records.
+Kafka records in the same Kafka topic partition mapped to documents with the same `_key` (see
+[Key handling](#key-handling)) will be written to ArangoDB in the same order as they are in the Kafka topic partition.
 
-Note that this is not guaranteed when the document `_key` comes from Kafka record value field `_key`, since the
-respective Kafka record keys could be different.
+The order between writes for records in the same Kafka partition that are mapped to documents with different `_key` is
+not guaranteed.
 
-There are no ordering guarantees for writes to ArangoDB across Kafka records with different keys or missing keys
-(assigned from Kafka record coordinates).
+The order between writes for records in different Kafka partitions is not guaranteed.
 
-Note that this is only guaranteed if the corresponding Kafka topic uses a key-based partitioner that assigns the same
-partition to records with the same key.
+To guarantee documents in ArangoDB are eventually consistent with the records in the Kafka topic, it is recommended
+deriving the document `_key` from Kafka record keys and using a key-based partitioner that assigns the same partition to
+records with the same key (e.g. Kafka default partitioner).
 
-Furthermore, tasks failures could lead to reprocessing of batches containing multiple Kafka records with the same key.
+Otherwise, in case the document `_key` is assigned from Kafka record value field `_key`, the same could be achieved
+using a field partitioner on `_key`.
+
+Furthermore, when restarted the connector resumes reading from the Kafka topic at an offset prior to where it stopped.
+This could lead to reprocessing of batches containing multiple Kafka records that are mapped to documents with the
+same `_key`.
 In such case, it could be possible to observe the related document in the database being temporarily updated to an
-older version and eventually to newer versions.
+older version and eventually to newer ones. Note that in this case the `_rev` field of the document will be
+different (see [Ordering guarantees](#ordering-guarantees)).
 
 ### Monitoring
 
