@@ -9,7 +9,7 @@ Auto-creation of ArangoDB collection is not supported.
 
 The ArangoDB Sink connector includes the following features:
 
-    At least once delivery
+    Delivery Guarantees
     Dead Letter Queue
     Multiple tasks
     Data mapping
@@ -19,9 +19,28 @@ The ArangoDB Sink connector includes the following features:
     Ordering Guarantees
     Monitoring
 
-### At least once delivery
+### Delivery Guarantees
 
-This connector guarantees that records are delivered at least once from the Kafka topic.
+This connector guarantees that each record in the Kafka topic is delivered at least once.
+For example, the same record could be delivered multiple times in the following scenarios:
+
+- transient errors in the communication between the connector and the db, leading to [retries](#retries)
+- errors in the communication between the connector and Kafka, preventing to commit offset of already written records
+- abrupt termination of connector task
+
+As a result, at least in the cases mentioned above some records might get written to ArangoDB more than once.
+Even if configured for idempotent writes (e.g. with `insert.overwriteMode=replace`), writing the same record multiple
+times will still update the `_rev` field of the document.
+
+Note that in case of retries, [Ordering Guarantees](#ordering-guarantees) are still provided.
+
+To improve the likelihood that every write survives even in case of a db-server failover, consider configuring the
+configuration property `insert.waitForSync` (default `false`), which determines whether the write operations are synced
+to disk before returning.
+
+### Retries
+
+TODO
 
 ### Dead Letter Queue
 
@@ -89,6 +108,7 @@ Deletes can be enabled with `delete.enabled=true`.
 Enabling delete mode does not affect the `insert.overwriteMode`.
 
 ### Idempotent writes
+
 TODO
 
 ### Ordering Guarantees
@@ -96,15 +116,19 @@ TODO
 ArangoDB Kafka Sink Connector maintains the order of writes to ArangoDB for the same Kafka record key. That is for Kafka
 records with the same key, the connector will process and write records to ArangoDB in the order it received the
 corresponding Kafka records.
-Note that this is not guaranteed when the document `_key` comes from Kafka record value field `_key`, since the 
+
+Note that this is not guaranteed when the document `_key` comes from Kafka record value field `_key`, since the
 respective Kafka record keys could be different.
 
 There are no ordering guarantees for writes to ArangoDB across Kafka records with different keys or missing keys
 (assigned from Kafka record coordinates).
 
 Note that this is only guaranteed if the corresponding Kafka topic uses a key-based partitioner that assigns the same
-partition to records with the same key. 
-See [Kafka partitioning](https://developer.confluent.io/courses/apache-kafka/partitions/) to learn more.
+partition to records with the same key.
+
+Furthermore, tasks failures could lead to reprocessing of batches containing multiple Kafka records with the same key.
+In such case, it could be possible to observe the related document in the database being temporarily updated to an
+older version and eventually to newer versions.
 
 ### Monitoring
 
