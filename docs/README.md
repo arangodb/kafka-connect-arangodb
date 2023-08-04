@@ -10,6 +10,7 @@ Auto-creation of ArangoDB collection is not supported.
 The ArangoDB Sink connector includes the following features:
 
     Delivery Guarantees
+    Error handling
     Retries
     Dead Letter Queue
     Multiple tasks
@@ -19,6 +20,7 @@ The ArangoDB Sink connector includes the following features:
     Idempotent writes
     Ordering Guarantees
     Monitoring
+    Compatibility
 
 ### Delivery Guarantees
 
@@ -40,9 +42,41 @@ To improve the likelihood that every write survives even in case of a db-server 
 configuration property `insert.waitForSync` (default `false`), which determines whether the write operations are synced
 to disk before returning.
 
+### Error handling
+
+TODO, see DE-654
+
+The connector categorize all the possible errors into 2 types:
+
+- `transient errors`: errors that are recoverable and could be retried, e.g. timeout errors
+- `fatal errors`: errors that are unrecoverable and will not be retried, e.g. illegal document keys
+
+The configuration property `fatal.errors.tolerance`
+Default:    none
+Behavior for tolerating errors during connector operation.
+
+- ‘none’ is the default value and signals that any error will result in an immediate connector task failure;
+- ‘all’ changes the behavior to skip over problematic records, if DLQ is configured, then the record will be reported (
+  see DLQ)
+
+`fatal.errors.log.enable`
+Default:    false
+If true, write each error and the details of the failed operation and problematic record to the Connect application log.
+This is ‘false’ by default, so that only errors that are not tolerated are reported.
+
+TODO, see DE-654
+extra.fatal.errorNums
+extra.transient.errorNums
+
 ### Retries
 
-TODO
+In case of transient errors, the configuration property `max.retries` (default `10`) determines how many times the
+connector will retry.
+
+The configuration property `retry.backoff.ms` (default `3000`) allows setting the time in milliseconds to wait following
+an error before a retry attempt is made.
+
+Fatal errors are not retried.
 
 ### Dead Letter Queue
 
@@ -50,21 +84,14 @@ This connector supports the Dead Letter Queue (DLQ) functionality.
 For information about accessing and using the DLQ,
 see [Confluent Platform Dead Letter Queue](https://docs.confluent.io/platform/current/connect/concepts.html#dead-letter-queue).
 
-The connector categorize all the possible errors into 2 types:
+TODO
 
-- `transient errors`: errors that are recoverable and could be retried, e.g. timeout errors
-- `fatal errors`: errors that are unrecoverable and will not be retried, e.g. invalid data format
+To enable it:
 
-The `transient.errors.tolerance` configuration property determines whether transient errors, after all potential retries
-failed, will be tolerated:
-
-- `none`: transient errors will cause a connector task failure
-- `all`: transient errors will be reported to the DLQ
-
-Fatal errors will always be reported to the DLQ.
-
-The `max.retries` configuration property determines how many times the ArangoDB Sink connector will try to insert the
-data before it sends the errant record to DLQ. Note that this retry only happens if it is a transient error.
+- `fatal.errors.tolerance=all`
+- errors.deadletterqueue.topic.name
+- errors.deadletterqueue.topic.replication.factor
+- errors.deadletterqueue.context.headers.enable
 
 ### Multiple tasks
 
@@ -130,12 +157,11 @@ records with the same key (e.g. Kafka default partitioner).
 Otherwise, in case the document `_key` is assigned from Kafka record value field `_key`, the same could be achieved
 using a field partitioner on `_key`.
 
-Furthermore, when restarted the connector resumes reading from the Kafka topic at an offset prior to where it stopped.
+When restarted, the connector could resume reading from the Kafka topic at an offset prior to where it stopped.
 This could lead to reprocessing of batches containing multiple Kafka records that are mapped to documents with the
 same `_key`.
-In such case, it could be possible to observe the related document in the database being temporarily updated to an
-older version and eventually to newer ones. Note that in this case the `_rev` field of the document will be
-different (see [Ordering guarantees](#ordering-guarantees)).
+In such case, it will be possible to observe the related document in the database being temporarily updated to older
+versions and eventually to newer ones.
 
 ### Monitoring
 
@@ -143,3 +169,12 @@ The Kafka Connect framework exposes basic status information over a REST interfa
 number of processed messages and the rate of processing, are available via JMX. For more information, see
 [Monitoring Kafka Connect and Connectors](https://docs.confluent.io/current/connect/managing/monitoring.html)
 (published by Confluent, also applies to a standard Apache Kafka distribution).
+
+### Compatibility
+
+TODO
+
+- Kafka versions: TODO after DE-633
+- Non-EOLed versions of ArangoDB 3.11+
+- Java 8+
+- AGIP
