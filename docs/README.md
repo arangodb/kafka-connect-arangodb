@@ -17,10 +17,12 @@ The ArangoDB Sink connector includes the following features:
     Data mapping
     Key handling
     Delete mode
+    Write Modes
     Idempotent writes
     Ordering Guarantees
     Monitoring
     Compatibility
+    SSL
 
 ### Delivery Guarantees
 
@@ -44,29 +46,38 @@ to disk before returning.
 
 ### Error handling
 
-TODO, see DE-654
+The connector categorizes all the possible errors into 2 types: data errors and transient errors.
 
-The connector categorize all the possible errors into 2 types:
+#### Data Errors
 
-- `transient errors`: errors that are recoverable and could be retried, e.g. timeout errors
-- `fatal errors`: errors that are unrecoverable and will not be retried, e.g. illegal document keys
+These are errors that are unrecoverable and caused by the data being processed. For example:
 
-The configuration property `fatal.errors.tolerance`
-Default:    none
-Behavior for tolerating errors during connector operation.
+- conversion errors:
+    - illegal key type
+    - illegal value type
+- server validation errors:
+    - illegal `_key`, `_from`, `_to` values
+    - JSON schema validation errors
+- server constraints violations
+    - unique index violations
+    - key conflicts (in case of `insert.overwriteMode=conflict`)
 
-- ‘none’ is the default value and signals that any error will result in an immediate connector task failure;
-- ‘all’ changes the behavior to skip over problematic records, if DLQ is configured, then the record will be reported (
-  see DLQ)
+The configuration property `data.errors.tolerance` allows configuring the behavior for tolerating data errors:
 
-`fatal.errors.log.enable`
-Default:    false
-If true, write each error and the details of the failed operation and problematic record to the Connect application log.
-This is ‘false’ by default, so that only errors that are not tolerated are reported.
+- `none`: data errors will result in an immediate connector task failure (default)
+- `all`: changes the behavior to skip over records generating data errors. If DLQ is configured, then the record will
+  be reported (see [DLQ](#dead-letter-queue)).
 
-TODO, see DE-654
-extra.fatal.errorNums
-extra.transient.errorNums
+Data errors detection can be further customized via the configuration property `extra.data.error.nums`.
+In addition to the cases listed above, the server errors reporting `errorNums` listed by this configuration property
+will be considered data errors.
+
+#### Transient Errors
+
+These are errors that are recoverable and could succeed if retried with some delay (see [Retries](#retries)).
+If all retries fail, then the connector task will fail.
+
+All errors that are not data errors are considered transient errors.
 
 ### Retries
 
@@ -76,7 +87,7 @@ connector will retry.
 The configuration property `retry.backoff.ms` (default `3000`) allows setting the time in milliseconds to wait following
 an error before a retry attempt is made.
 
-Fatal errors are not retried.
+Data errors are never retried.
 
 ### Dead Letter Queue
 
@@ -84,14 +95,10 @@ This connector supports the Dead Letter Queue (DLQ) functionality.
 For information about accessing and using the DLQ,
 see [Confluent Platform Dead Letter Queue](https://docs.confluent.io/platform/current/connect/concepts.html#dead-letter-queue).
 
-TODO
+Only data errors can be reported to the DLQ. Transient errors, after potential retries, will always make the task fail.
 
-To enable it:
-
-- `fatal.errors.tolerance=all`
-- errors.deadletterqueue.topic.name
-- errors.deadletterqueue.topic.replication.factor
-- errors.deadletterqueue.context.headers.enable
+DLQ support for data errors can be enabled by setting `data.errors.tolerance=all`
+and `errors.deadletterqueue.topic.name`.
 
 ### Multiple tasks
 
@@ -136,9 +143,26 @@ Deletes can be enabled with `delete.enabled=true`.
 
 Enabling delete mode does not affect the `insert.overwriteMode`.
 
+### Write Modes
+
+The configuration parameter `insert.overwriteMode` allows setting the write behavior in case a document with the
+same `_key` already exists:
+
+- `conflict`: the new document value is not written and an exception is thrown (default)
+- `ignore`: the new document value is not written
+- `replace`: the existing document is overwritten with the new document value
+- `update`: the existing document is patched (partially updated) with the new document value
+
 ### Idempotent writes
 
-TODO
+All the write modes supported are idempotent, with the exception that the document revision field (`_rev`) will change
+every time a document is written.
+See [related documentation](https://www.arangodb.com/docs/stable/data-modeling-documents.html#document-revisions) for
+more details.
+
+If there are failures, the Kafka offset used for recovery may not be up-to-date with what was committed as of the time
+of the failure, which can lead to re-processing during recovery. In case of `insert.overwriteMode=conflict` (default),
+this can lead to constraint violations errors if records need to be re-processed.
 
 ### Ordering Guarantees
 
@@ -170,11 +194,6 @@ number of processed messages and the rate of processing, are available via JMX. 
 [Monitoring Kafka Connect and Connectors](https://docs.confluent.io/current/connect/managing/monitoring.html)
 (published by Confluent, also applies to a standard Apache Kafka distribution).
 
-### Compatibility
+### SSL
 
 TODO
-
-- Kafka versions: TODO after DE-633
-- Non-EOLed versions of ArangoDB 3.11+
-- Java 8+
-- AGIP
