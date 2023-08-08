@@ -41,7 +41,7 @@ jobs:
             DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test
+          command: mvn -e -X --no-transfer-progress integration-test
 
 workflows:
   test:
