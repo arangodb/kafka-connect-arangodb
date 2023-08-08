@@ -18,21 +18,21 @@
 
 package com.arangodb.kafka.deployment;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class SchemaRegistryDeployment {
-    private static final Logger LOG;
-    private final static String schemaRegistryUrl;
 
-    static {
-        LOG = LoggerFactory.getLogger(SchemaRegistryDeployment.class);
-        schemaRegistryUrl = System.getProperty("schema.registry.url", "http://127.0.0.1:8081");
-        LOG.info("Using schema.registry.url: {}", schemaRegistryUrl);
-        assert !schemaRegistryUrl.isEmpty();
+    public static String getSchemaRegistryUrlConnect() {
+        Class<?> kafkaDeploymentClass = KafkaConnectDeployment.getInstance().getClass();
+        if (kafkaDeploymentClass == StandaloneKafkaConnectDeployment.class) {
+            return "http://127.0.0.1:8081";
+        } else if (kafkaDeploymentClass == ClusterKafkaConnectDeployment.class) {
+            return "http://schema-registry:8081";
+        } else {
+            throw new IllegalStateException("Unknown KafkaConnectDeployment class: " + kafkaDeploymentClass);
+        }
     }
 
-    public static String getSchemaRegistryUrl() {
-        return schemaRegistryUrl;
+    public static String getSchemaRegistryUrlClient() {
+        return "http://127.0.0.1:8081";
     }
+
 }
