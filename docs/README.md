@@ -9,20 +9,20 @@ Auto-creation of ArangoDB collection is not supported.
 
 The ArangoDB Sink connector includes the following features:
 
-    Delivery Guarantees
-    Error handling
-    Retries
-    Dead Letter Queue
-    Multiple tasks
-    Data mapping
-    Key handling
-    Delete mode
-    Write Modes
-    Idempotent writes
-    Ordering Guarantees
-    Monitoring
-    Compatibility
-    SSL
+- Delivery Guarantees
+- Error handling
+- Retries
+- Dead Letter Queue
+- Multiple tasks
+- Data mapping
+- Key handling
+- Delete mode
+- Write Modes
+- Idempotent writes
+- Ordering Guarantees
+- Monitoring
+- Compatibility
+- SSL
 
 ### Delivery Guarantees
 
