@@ -49,7 +49,7 @@ Create source connector:
 
 ```shell
 curl --request POST \
-    --url "http://127.0.0.1:8083/connectors" \
+    --url "http://127.0.0.1:18083/connectors" \
     --header 'content-type: application/json' \
     --data '{
         "name": "source-datagen-orders",
@@ -78,14 +78,14 @@ Explore configuration options in the console at [http://127.0.0.1:8080/connect-c
 or via:
 
 ```shell
-curl http://127.0.0.1:8083/connector-plugins/ArangoSinkConnector/config
+curl http://127.0.0.1:18083/connector-plugins/ArangoSinkConnector/config
 ```
 
 Create sink connector:
 
 ```shell
 curl --request POST \
-    --url "http://127.0.0.1:8083/connectors" \
+    --url "http://127.0.0.1:18083/connectors" \
     --header 'content-type: application/json' \
     --data '{
         "name": "sink-adb-orders",
