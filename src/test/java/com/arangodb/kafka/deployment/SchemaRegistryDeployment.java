@@ -27,7 +27,7 @@ public class SchemaRegistryDeployment {
 
     static {
         LOG = LoggerFactory.getLogger(SchemaRegistryDeployment.class);
-        schemaRegistryUrl = System.getProperty("schema.registry.url", "http://172.28.11.21:8081");
+        schemaRegistryUrl = System.getProperty("schema.registry.url", "http://127.0.0.1:8081");
         LOG.info("Using schema.registry.url: {}", schemaRegistryUrl);
         assert !schemaRegistryUrl.isEmpty();
     }

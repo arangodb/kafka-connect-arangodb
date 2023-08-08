@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     name: cluster [${{matrix.topology}}, ${{matrix.java-version}}]
     env:
-      KAFKA_CONNECT_HOST: "http://172.28.11.11:8083"
+      KAFKA_CONNECT_HOST: "http://127.0.0.1:18083"
       ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
 
     strategy:
@@ -109,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     name: ssl
     env:
-      KAFKA_CONNECT_HOST: "http://172.28.11.11:8083"
+      KAFKA_CONNECT_HOST: "http://127.0.0.1:18083"
       ARANGO_VERSION: 3.11.1
 
     steps:
