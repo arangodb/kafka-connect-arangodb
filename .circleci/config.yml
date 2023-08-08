@@ -31,6 +31,9 @@ jobs:
           name: Start Kafka
           command: ./docker/start_kafka.sh
       - run:
+          name: Kafka Status
+          command: sleep 60 && docker ps -a && docker logs kafka-1 && docker logs kafka-2 && docker logs kafka-3
+      - run:
           name: Start Schema Registry
           command: ./docker/start_schema_registry.sh
       - run:
@@ -41,7 +44,7 @@ jobs:
             DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       - run:
           name: Integration Tests
-          command: mvn -e -X --no-transfer-progress integration-test
+          command: mvn -e --no-transfer-progress integration-test
 
 workflows:
   test:

@@ -288,9 +288,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <trimStackTrace>false</trimStackTrace>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
