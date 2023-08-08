@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DOCKER_IMAGE=docker.io/redpandadata/console:v2.2.4
+docker pull $DOCKER_IMAGE
+
 docker run -d \
   --name redpanda-console -h redpanda-console \
   --network arangodb \
@@ -8,4 +11,4 @@ docker run -d \
   -e CONNECT_ENABLED="true" \
   -e CONNECT_CLUSTERS_NAME="kafka-connect" \
   -e CONNECT_CLUSTERS_URL="http://172.28.11.11:8083" \
-  docker.io/redpandadata/console:v2.2.4
+  $DOCKER_IMAGE

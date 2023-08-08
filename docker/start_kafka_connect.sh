@@ -1,5 +1,8 @@
 #!/bin/bash
 
+DOCKER_IMAGE=docker.io/confluentinc/cp-kafka-connect:7.4.0
+docker pull $DOCKER_IMAGE
+
 KAFKA_CONNECT1_IP=172.28.11.11 # port 8083
 KAFKA_CONNECT2_IP=172.28.11.12 # port 8083
 KAFKA_BOOTSTRAP_SERVERS=172.28.11.1:9092,172.28.11.2:9092,172.28.11.3:9092
@@ -25,7 +28,7 @@ docker run -d \
   -e CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_PLUGIN_PATH="/usr/share/java" \
-  confluentinc/cp-kafka-connect:7.4.0
+  $DOCKER_IMAGE
 
 docker run -d \
   --name kafka-connect-2 -h kafka-connect-2 \
@@ -47,7 +50,7 @@ docker run -d \
   -e CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_PLUGIN_PATH="/usr/share/java" \
-  confluentinc/cp-kafka-connect:7.4.0
+  $DOCKER_IMAGE
 
 wait_server() {
     # shellcheck disable=SC2091

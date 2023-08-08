@@ -25,17 +25,8 @@ jobs:
       - checkout
       - setup_remote_docker
       - run:
-          name: Create Network
-          command: ./docker/create_network.sh
-      - run:
-          name: Start Kafka
-          command: ./docker/start_kafka.sh
-      - run:
-          name: Kafka Status
-          command: sleep 60 && docker ps -a && docker logs kafka-1 && docker logs kafka-2 && docker logs kafka-3
-      - run:
-          name: Start Schema Registry
-          command: ./docker/start_schema_registry.sh
+          name: Create Kafka Environment
+          command: ./docker/create_network.sh && ./docker/start_kafka.sh && ./docker/start_schema_registry.sh
       - run:
           name: Start Database
           command: ./docker/start_db.sh
