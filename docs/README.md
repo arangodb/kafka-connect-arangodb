@@ -1,7 +1,7 @@
 # Kafka Connect ArangoDB Connector
 
 The Kafka Connect ArangoDB Sink connector allows you to export data from Apache Kafka® to ArangoDB.
-It writes data from one or more topics in Kafka to a collection in Elasticsearch.
+It writes data from one or more topics in Kafka to a collection in ArangoDB.
 
 Auto-creation of ArangoDB collection is not supported.
 
