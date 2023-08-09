@@ -46,7 +46,12 @@ jobs:
       - checkout
       - run:
           name: Package
-          command: mvn package
+          command: |
+            if [ ! -z "$KAFKA_CONNECT_HOST" ]; then
+              mvn package
+            else
+              echo "Skipping..."
+            fi
       - setup_remote_docker
       - run:
           name: Create Kafka Environment
