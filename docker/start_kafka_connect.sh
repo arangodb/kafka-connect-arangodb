@@ -61,11 +61,11 @@ wait_server() {
 }
 
 echo "Waiting..."
-wait_server "http://127.0.0.1:18083"
-wait_server "http://127.0.0.1:28083"
+wait_server "http://172.28.0.1:18083"
+wait_server "http://172.28.0.1:28083"
 
 echo ""
 echo ""
 echo "Done, your deployment is reachable at: "
-echo "Kafka Connect:  http://127.0.0.1:18083"
-echo "Kafka Connect:  http://127.0.0.1:28083"
+echo "Kafka Connect:  http://172.28.0.1:18083"
+echo "Kafka Connect:  http://172.28.0.1:28083"

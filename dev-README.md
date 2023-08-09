@@ -42,5 +42,5 @@ Start Kafka Connect:
 
 Cluster integration tests:
 ```shell
-mvn integration-test -Dkafka.connect.host=http://127.0.0.1:18083
+mvn integration-test -Dkafka.connect.host=http://172.28.0.1:18083
 ```

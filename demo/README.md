@@ -22,7 +22,7 @@ Start ArangoDB cluster:
 STARTER_MODE=cluster ./start_db.sh
 ```
 
-The deployed cluster will be accessible at [http://127.0.0.1:8529](http://127.0.0.1:8529) with username `root` and
+The deployed cluster will be accessible at [http://172.28.0.1:8529](http://172.28.0.1:8529) with username `root` and
 password `test`.
 
 Create package:
@@ -40,7 +40,7 @@ Start docker compose environment:
 docker compose up
 ```
 
-The console will be accessible at [http://127.0.0.1:8080](http://127.0.0.1:8080).
+The console will be accessible at [http://172.28.0.1:8080](http://172.28.0.1:8080).
 
 
 ## Produce data
@@ -49,7 +49,7 @@ Create source connector:
 
 ```shell
 curl --request POST \
-    --url "http://127.0.0.1:18083/connectors" \
+    --url "http://172.28.0.1:18083/connectors" \
     --header 'content-type: application/json' \
     --data '{
         "name": "source-datagen-orders",
@@ -63,7 +63,7 @@ curl --request POST \
     }'
 ```
 
-The messages produced can be checked at [http://127.0.0.1:8080/topics/orders](http://127.0.0.1:8080/topics/orders).
+The messages produced can be checked at [http://172.28.0.1:8080/topics/orders](http://172.28.0.1:8080/topics/orders).
 
 
 ## Create sink connector
@@ -71,21 +71,21 @@ The messages produced can be checked at [http://127.0.0.1:8080/topics/orders](ht
 Create db collection:
 
 ```shell
-curl -u root:test http://127.0.0.1:8529/_api/collection -d '{"name": "orders"}'
+curl -u root:test http://172.28.0.1:8529/_api/collection -d '{"name": "orders"}'
 ```
 
-Explore configuration options in the console at [http://127.0.0.1:8080/connect-clusters/kafka-connect/create-connector](http://127.0.0.1:8080/connect-clusters/kafka-connect/create-connector)
+Explore configuration options in the console at [http://172.28.0.1:8080/connect-clusters/kafka-connect/create-connector](http://172.28.0.1:8080/connect-clusters/kafka-connect/create-connector)
 or via:
 
 ```shell
-curl http://127.0.0.1:18083/connector-plugins/ArangoSinkConnector/config
+curl http://172.28.0.1:18083/connector-plugins/ArangoSinkConnector/config
 ```
 
 Create sink connector:
 
 ```shell
 curl --request POST \
-    --url "http://127.0.0.1:18083/connectors" \
+    --url "http://172.28.0.1:18083/connectors" \
     --header 'content-type: application/json' \
     --data '{
         "name": "sink-adb-orders",
@@ -104,7 +104,7 @@ curl --request POST \
 Check documents count:
 
 ```shell
-curl -u root:test http://127.0.0.1:8529/_api/cursor -d '{"query":"FOR d IN orders COLLECT WITH COUNT INTO c RETURN c"}'
+curl -u root:test http://172.28.0.1:8529/_api/cursor -d '{"query":"FOR d IN orders COLLECT WITH COUNT INTO c RETURN c"}'
 ```
 
-Check inserted documents at [http://127.0.0.1:8529/_db/_system/_admin/aardvark/index.html#collection/orders/documents/1](http://127.0.0.1:8529/_db/_system/_admin/aardvark/index.html#collection/orders/documents/1).
+Check inserted documents at [http://172.28.0.1:8529/_db/_system/_admin/aardvark/index.html#collection/orders/documents/1](http://172.28.0.1:8529/_db/_system/_admin/aardvark/index.html#collection/orders/documents/1).

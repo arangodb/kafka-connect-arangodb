@@ -23,7 +23,7 @@ public class SchemaRegistryDeployment {
     public static String getSchemaRegistryUrlConnect() {
         Class<?> kafkaDeploymentClass = KafkaConnectDeployment.getInstance().getClass();
         if (kafkaDeploymentClass == StandaloneKafkaConnectDeployment.class) {
-            return "http://127.0.0.1:8081";
+            return "http://172.28.0.1:8081";
         } else if (kafkaDeploymentClass == ClusterKafkaConnectDeployment.class) {
             return "http://schema-registry:8081";
         } else {
@@ -32,7 +32,7 @@ public class SchemaRegistryDeployment {
     }
 
     public static String getSchemaRegistryUrlClient() {
-        return "http://127.0.0.1:8081";
+        return "http://172.28.0.1:8081";
     }
 
 }
