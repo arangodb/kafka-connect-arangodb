@@ -24,7 +24,7 @@ jobs:
         default: '3.11.2'
       kafka-connect-host:
         type: 'string'
-        default: 'http://172.28.0.1:18083'
+        default: ''
       arango-endpoints:
         type: 'string'
         default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
@@ -34,6 +34,13 @@ jobs:
       it-tests:
         type: 'string'
         default: ''
+    environment:
+      STARTER_MODE: <<parameters.topology>>
+      DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
+      ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
+      KAFKA_CONNECT_HOST: <<parameters.kafka-connect-host>>
+      SSL: <<parameters.ssl>>
+      IT_TESTS: <<parameters.it-tests>>
     executor: <<parameters.jdk>>
     steps:
       - checkout
@@ -43,22 +50,10 @@ jobs:
       - setup_remote_docker
       - run:
           name: Create Kafka Environment
-          command: ./docker/create_network.sh && ./docker/start_kafka.sh && ./docker/start_schema_registry.sh && ./docker/start_kafka_connect.sh
-      - run:
-          name: Start Database
-          command: ./docker/start_db.sh
-          environment:
-            SSL: <<parameters.ssl>>
-            STARTER_MODE: <<parameters.topology>>
-            DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
+          command: ./docker/startup.sh
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test -Dkafka.connect.host=$KAFKA_CONNECT_HOST -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=$SSL -Dit.test=$IT_TESTS
-          environment:
-            KAFKA_CONNECT_HOST: <<parameters.kafka-connect-host>>
-            ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
-            SSL: <<parameters.ssl>>
-            IT_TESTS: <<parameters.it-tests>>
 
 workflows:
   test-standalone:
@@ -68,8 +63,6 @@ workflows:
             parameters:
               topology:
                 - single
-              kafka-connect-host:
-                - http://127.0.0.1:8083
               arango-endpoints:
                 - 172.28.0.1:8529
   test-cluster:
@@ -82,6 +75,8 @@ workflows:
                 - j17
               topology:
                 - cluster
+              kafka-connect-host:
+                - http://172.28.0.1:18083
   test-ssl:
     jobs:
       - test:
@@ -89,6 +84,8 @@ workflows:
             parameters:
               topology:
                 - cluster
+              kafka-connect-host:
+                - http://172.28.0.1:18083
               ssl:
                 - true
               it-tests:
