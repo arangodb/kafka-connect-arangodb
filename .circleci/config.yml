@@ -16,10 +16,24 @@ jobs:
     parameters:
       jdk:
         type: 'string'
+        default: 'j17'
       topology:
         type: 'string'
       arango-version:
         type: 'string'
+        default: '3.11.2'
+      kafka-connect-host:
+        type: 'string'
+        default: 'http://172.28.0.1:18083'
+      arango-endpoints:
+        type: 'string'
+        default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
+      ssl:
+        type: 'boolean'
+        default: false
+      it-tests:
+        type: 'string'
+        default: ''
     executor: <<parameters.jdk>>
     steps:
       - checkout
@@ -39,12 +53,7 @@ jobs:
             DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       - run:
           name: Integration Tests
-          command: >
-            mvn -e --no-transfer-progress integration-test 
-              -Dkafka.connect.host=$KAFKA_CONNECT_HOST 
-              -Darango.endpoints=$ARANGO_ENDPOINTS
-              -DSslTest=$SSL
-              -Dit.test=$IT_TESTS
+          command: mvn -e --no-transfer-progress integration-test -Dkafka.connect.host=$KAFKA_CONNECT_HOST -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=$SSL -Dit.test=$IT_TESTS
           environment:
             KAFKA_CONNECT_HOST: <<parameters.kafka-connect-host>>
             ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
@@ -55,15 +64,10 @@ workflows:
   test-standalone:
     jobs:
       - test:
-          environment:
           matrix:
             parameters:
-              jdk:
-                - j20
               topology:
                 - single
-              arango-version:
-                - 3.11.2
               kafka-connect-host:
                 - http://127.0.0.1:8083
               arango-endpoints:
@@ -78,27 +82,13 @@ workflows:
                 - j17
               topology:
                 - cluster
-              arango-version:
-                - 3.11.2
-              kafka-connect-host:
-                - http://172.28.0.1:18083
-              arango-endpoints:
-                - 172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
   test-ssl:
     jobs:
       - test:
           matrix:
             parameters:
-              jdk:
-                - j17
               topology:
                 - cluster
-              arango-version:
-                - 3.11.2
-              kafka-connect-host:
-                - http://172.28.0.1:18083
-              arango-endpoints:
-                - 172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
               ssl:
                 - true
               it-tests:
