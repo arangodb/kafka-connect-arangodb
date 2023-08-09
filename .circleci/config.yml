@@ -61,11 +61,17 @@ jobs:
           name: Start Database
           command: ./docker/start_db.sh
           environment:
+            SSL: $SSL
             STARTER_MODE: <<parameters.topology>>
             DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Dkafka.connect.host=$KAFKA_CONNECT_HOST -Darango.endpoints=$ARANGO_ENDPOINTS
+          command: >
+            mvn -e --no-transfer-progress integration-test 
+              -Dkafka.connect.host=$KAFKA_CONNECT_HOST 
+              -Darango.endpoints=$ARANGO_ENDPOINTS
+              -DSslTest=$SSL
+              -Dit.test=$IT_TESTS
 
 workflows:
   test:
@@ -89,3 +95,15 @@ workflows:
                 - cluster
               arango-version:
                 - 3.11.2
+      - test-ssl:
+          matrix:
+            parameters:
+              jdk:
+                - j17
+              topology:
+                - cluster
+              arango-version:
+                - 3.11.2
+          environment:
+            SSL: true
+            IT_TESTS: com.arangodb.kafka.SslIT
