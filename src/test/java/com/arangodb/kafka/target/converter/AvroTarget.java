@@ -46,7 +46,7 @@ public class AvroTarget extends TestTarget {
         Map<String, Object> cfg = super.producerConfig();
         cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
-        cfg.put("schema.registry.url", SchemaRegistryDeployment.getSchemaRegistryUrl());
+        cfg.put("schema.registry.url", SchemaRegistryDeployment.getSchemaRegistryUrlClient());
         return cfg;
     }
 
@@ -55,7 +55,7 @@ public class AvroTarget extends TestTarget {
         Map<String, String> cfg = super.getConfig();
         cfg.put("key.converter", "org.apache.kafka.connect.storage.StringConverter");
         cfg.put("value.converter", "io.confluent.connect.avro.AvroConverter");
-        cfg.put("value.converter.schema.registry.url", SchemaRegistryDeployment.getSchemaRegistryUrl());
+        cfg.put("value.converter.schema.registry.url", SchemaRegistryDeployment.getSchemaRegistryUrlConnect());
         return cfg;
     }
 

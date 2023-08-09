@@ -12,35 +12,20 @@ mvn package
 
 Create docker network (once until reboot):
 ```shell
-docker/create_network.sh
+./docker/create_network.sh
 ```
 
-Start db:
+Start test environment:
 ```shell
-./docker/start_db.sh
-```
-
-Start Kafka:
-```shell
-./docker/start_kafka.sh
-```
-
-Start Schema Registry:
-```shell
-./docker/start_schema_registry.sh 
+KC=true STARTER_MODE=cluster ./docker/startup.sh
 ```
 
 Standalone integration tests:
 ```shell
-mvn integration-test
-```
-
-Start Kafka Connect:
-```shell
-./docker/start_kafka_connect.sh
+mvn integration-test -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
 ```
 
 Cluster integration tests:
 ```shell
-mvn integration-test -Dkafka.connect.host=http://172.28.11.11:8083
+mvn integration-test -Dkafka.connect.host=http://172.28.0.1:18083 -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
 ```

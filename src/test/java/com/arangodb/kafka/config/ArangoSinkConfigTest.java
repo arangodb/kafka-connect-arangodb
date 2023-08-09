@@ -15,7 +15,7 @@ class ArangoSinkConfigTest {
 
     ArangoSinkConfigTest() {
         baseProps = new HashMap<>();
-        baseProps.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, "localhost:8529");
+        baseProps.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, "adb:8529");
         baseProps.put(ArangoSinkConfig.CONNECTION_COLLECTION, "collection");
     }
 
