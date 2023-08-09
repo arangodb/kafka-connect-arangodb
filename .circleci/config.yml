@@ -12,7 +12,7 @@ executors:
       - image: 'cimg/openjdk:20.0'
 
 jobs:
-  test-standalone:
+  test:
     parameters:
       jdk:
         type: 'string'
@@ -20,33 +20,6 @@ jobs:
         type: 'string'
       arango-version:
         type: 'string'
-    executor: <<parameters.jdk>>
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run:
-          name: Create Kafka Environment
-          command: ./docker/create_network.sh && ./docker/start_kafka.sh && ./docker/start_schema_registry.sh
-      - run:
-          name: Start Database
-          command: ./docker/start_db.sh
-          environment:
-            STARTER_MODE: <<parameters.topology>>
-            DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
-      - run:
-          name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test
-  test-cluster:
-    parameters:
-      jdk:
-        type: 'string'
-      topology:
-        type: 'string'
-      arango-version:
-        type: 'string'
-    environment:
-      KAFKA_CONNECT_HOST: "http://172.28.0.1:18083"
-      ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
     executor: <<parameters.jdk>>
     steps:
       - checkout
@@ -74,9 +47,12 @@ jobs:
               -Dit.test=$IT_TESTS
 
 workflows:
-  test:
+  test-standalone:
     jobs:
-      - test-standalone:
+      - test:
+          environment:
+            KAFKA_CONNECT_HOST: "http://127.0.0.1:8083"
+            ARANGO_ENDPOINTS: "172.28.0.1:8529"
           matrix:
             parameters:
               jdk:
@@ -85,7 +61,12 @@ workflows:
                 - single
               arango-version:
                 - 3.11.2
-      - test-cluster:
+  test-cluster:
+    jobs:
+      - test:
+          environment:
+            KAFKA_CONNECT_HOST: "http://172.28.0.1:18083"
+            ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
           matrix:
             parameters:
               jdk:
@@ -95,7 +76,14 @@ workflows:
                 - cluster
               arango-version:
                 - 3.11.2
-      - test-ssl:
+  test-ssl:
+    jobs:
+      - test:
+          environment:
+            KAFKA_CONNECT_HOST: "http://172.28.0.1:18083"
+            ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
+            SSL: true
+            IT_TESTS: com.arangodb.kafka.SslIT
           matrix:
             parameters:
               jdk:
@@ -104,6 +92,3 @@ workflows:
                 - cluster
               arango-version:
                 - 3.11.2
-          environment:
-            SSL: true
-            IT_TESTS: com.arangodb.kafka.SslIT
