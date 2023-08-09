@@ -8,10 +8,10 @@ KC=${KC:=false}
 set -e
 
 ./docker/start_kafka.sh &
-./docker/start_schema_registry.sh &
 ./docker/start_db.sh &
 if [ "$KC" == "true" ] || [ ! -z "$KAFKA_CONNECT_HOST" ]; then
-  ./docker/start_kafka_connect.sh &
+  sleep 1 && ./docker/start_kafka_connect.sh &
 fi
+sleep 1 && ./docker/start_schema_registry.sh &
 
 wait
