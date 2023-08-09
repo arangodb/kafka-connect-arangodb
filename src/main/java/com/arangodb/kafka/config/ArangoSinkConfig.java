@@ -110,7 +110,7 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_PROTOCOL_DOC = "Communication protocol.";
     private static final String CONNECTION_PROTOCOL_DISPLAY = "Protocol";
 
-    public static final String CONNECTION_CONTENT_TYPE = CONNECTION_PREFIX + "content-type";
+    public static final String CONNECTION_CONTENT_TYPE = CONNECTION_PREFIX + "content.type";
     private static final String CONNECTION_CONTENT_TYPE_DEFAULT = ContentType.JSON.toString();
     private static final String CONNECTION_CONTENT_TYPE_DOC = "Communication content type.";
     private static final String CONNECTION_CONTENT_TYPE_DISPLAY = "Content Type";
@@ -191,7 +191,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     + "``false``: existing document fields will be overwritten";
     private static final String INSERT_MERGE_OBJECTS_DISPLAY = "Merge Objects";
 
-    public static final String INSERT_TIMEOUT = "insert.timeout";
+    public static final String INSERT_TIMEOUT = "insert.timeout.ms";
     private static final int INSERT_TIMEOUT_DEFAULT = 30_000;
     private static final String INSERT_TIMEOUT_DOC = "Connect and request timeout in ms.";
     private static final String INSERT_TIMEOUT_DISPLAY = "Requests timeout";
@@ -208,13 +208,25 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String DELETE_ENABLED_DISPLAY = "Enable deletes";
     //endregion
 
+    //region error handling
+    private static final String ERROR_HANDLING_GROUP = "Errors Handling";
+
+    public static final String TRANSIENT_ERRORS_TOLERANCE = "transient.errors.tolerance";
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DEFAULT = TransientErrorsTolerance.NONE.toString();
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DOC =
+            "Whether transient errors, after all potential retries failed, will be tolerated:\n"
+                    + "``none``: transient errors will cause a connector task failure\n"
+                    + "``all``: transient errors will be reported to the DLQ";
+    private static final String TRANSIENT_ERRORS_TOLERANCE_DISPLAY = "Transient Errors Tolerance";
+    //endregion
+
     //region retries
     private static final String RETRIES_GROUP = "Retries";
 
     public static final String MAX_RETRIES = "max.retries";
     private static final int MAX_RETRIES_DEFAULT = 10;
     private static final String MAX_RETRIES_DOC =
-            "The maximum number of times to retry on errors before failing the task.";
+            "The maximum number of times to retry transient errors.";
     private static final String MAX_RETRIES_DISPLAY = "Maximum Retries";
 
     public static final String RETRY_BACKOFF_MS = "retry.backoff.ms";
@@ -222,14 +234,6 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String RETRY_BACKOFF_MS_DOC =
             "The time in milliseconds to wait following an error before a retry attempt is made.";
     private static final String RETRY_BACKOFF_MS_DISPLAY = "Retry Backoff (millis)";
-
-    public static final String TRANSIENT_ERRORS_TOLERANCE = "transient.errors.tolerance";
-    private static final String TRANSIENT_ERRORS_TOLERANCE_DEFAULT = TransientErrorsTolerance.NONE.toString();
-    private static final String TRANSIENT_ERRORS_TOLERANCE_DOC =
-            "Whether transient errors (after potential failed retries) will be tolerated:\n"
-                    + "``none``: errors will cause a connector task failure\n"
-                    + "``all``: errors will be recorded in the DLQ";
-    private static final String TRANSIENT_ERRORS_TOLERANCE_DISPLAY = "Transient Errors Tolerance";
     //endregion
 
     public static final ConfigDef CONFIG_DEF = new ConfigDef()
@@ -513,6 +517,22 @@ public class ArangoSinkConfig extends AbstractConfig {
             )
             //endregion
 
+            // region error handling
+            .define(
+                    TRANSIENT_ERRORS_TOLERANCE,
+                    ConfigDef.Type.STRING,
+                    TRANSIENT_ERRORS_TOLERANCE_DEFAULT,
+                    new EnumValidator(TransientErrorsTolerance.class),
+                    ConfigDef.Importance.MEDIUM,
+                    TRANSIENT_ERRORS_TOLERANCE_DOC,
+                    ERROR_HANDLING_GROUP,
+                    3,
+                    ConfigDef.Width.MEDIUM,
+                    TRANSIENT_ERRORS_TOLERANCE_DISPLAY,
+                    new EnumRecommender(TransientErrorsTolerance.class)
+            )
+            //endregion
+
             // region retries
             .define(
                     MAX_RETRIES,
@@ -535,19 +555,6 @@ public class ArangoSinkConfig extends AbstractConfig {
                     2,
                     ConfigDef.Width.SHORT,
                     RETRY_BACKOFF_MS_DISPLAY
-            )
-            .define(
-                    TRANSIENT_ERRORS_TOLERANCE,
-                    ConfigDef.Type.STRING,
-                    TRANSIENT_ERRORS_TOLERANCE_DEFAULT,
-                    new EnumValidator(TransientErrorsTolerance.class),
-                    ConfigDef.Importance.MEDIUM,
-                    TRANSIENT_ERRORS_TOLERANCE_DOC,
-                    RETRIES_GROUP,
-                    3,
-                    ConfigDef.Width.MEDIUM,
-                    TRANSIENT_ERRORS_TOLERANCE_DISPLAY,
-                    new EnumRecommender(TransientErrorsTolerance.class)
             )
             //endregion
 
