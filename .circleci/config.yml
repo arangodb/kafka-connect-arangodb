@@ -36,6 +36,36 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test
+  test-cluster:
+    parameters:
+      jdk:
+        type: 'string'
+      topology:
+        type: 'string'
+      arango-version:
+        type: 'string'
+    environment:
+      KAFKA_CONNECT_HOST: "http://172.28.0.1:18083"
+      ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
+    executor: <<parameters.jdk>>
+    steps:
+      - checkout
+      - run:
+          name: Package
+          command: mvn package
+      - setup_remote_docker
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/create_network.sh && ./docker/start_kafka.sh && ./docker/start_schema_registry.sh && ./docker/start_kafka_connect.sh
+      - run:
+          name: Start Database
+          command: ./docker/start_db.sh
+          environment:
+            STARTER_MODE: <<parameters.topology>>
+            DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
+      - run:
+          name: Integration Tests
+          command: mvn -e --no-transfer-progress integration-test -Dkafka.connect.host=$KAFKA_CONNECT_HOST -Darango.endpoints=$ARANGO_ENDPOINTS
 
 workflows:
   test:
@@ -47,5 +77,15 @@ workflows:
                 - j20
               topology:
                 - single
+              arango-version:
+                - 3.11.2
+      - test-cluster:
+          matrix:
+            parameters:
+              jdk:
+                - j11
+                - j17
+              topology:
+                - cluster
               arango-version:
                 - 3.11.2
