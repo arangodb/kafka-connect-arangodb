@@ -34,7 +34,7 @@ jobs:
           name: Start Database
           command: ./docker/start_db.sh
           environment:
-            SSL: $SSL
+            SSL: <<parameters.ssl>>
             STARTER_MODE: <<parameters.topology>>
             DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       - run:
@@ -45,14 +45,17 @@ jobs:
               -Darango.endpoints=$ARANGO_ENDPOINTS
               -DSslTest=$SSL
               -Dit.test=$IT_TESTS
+          environment:
+            KAFKA_CONNECT_HOST: <<parameters.kafka-connect-host>>
+            ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
+            SSL: <<parameters.ssl>>
+            IT_TESTS: <<parameters.it-tests>>
 
 workflows:
   test-standalone:
     jobs:
       - test:
           environment:
-            KAFKA_CONNECT_HOST: "http://127.0.0.1:8083"
-            ARANGO_ENDPOINTS: "172.28.0.1:8529"
           matrix:
             parameters:
               jdk:
@@ -61,12 +64,13 @@ workflows:
                 - single
               arango-version:
                 - 3.11.2
+              kafka-connect-host:
+                - http://127.0.0.1:8083
+              arango-endpoints:
+                - 172.28.0.1:8529
   test-cluster:
     jobs:
       - test:
-          environment:
-            KAFKA_CONNECT_HOST: "http://172.28.0.1:18083"
-            ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
           matrix:
             parameters:
               jdk:
@@ -76,14 +80,13 @@ workflows:
                 - cluster
               arango-version:
                 - 3.11.2
+              kafka-connect-host:
+                - http://172.28.0.1:18083
+              arango-endpoints:
+                - 172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
   test-ssl:
     jobs:
       - test:
-          environment:
-            KAFKA_CONNECT_HOST: "http://172.28.0.1:18083"
-            ARANGO_ENDPOINTS: "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549"
-            SSL: true
-            IT_TESTS: com.arangodb.kafka.SslIT
           matrix:
             parameters:
               jdk:
@@ -92,3 +95,11 @@ workflows:
                 - cluster
               arango-version:
                 - 3.11.2
+              kafka-connect-host:
+                - http://172.28.0.1:18083
+              arango-endpoints:
+                - 172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
+              ssl:
+                - true
+              it-tests:
+                - com.arangodb.kafka.SslIT
