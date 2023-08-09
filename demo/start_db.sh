@@ -37,7 +37,7 @@ if [ "$STARTER_MODE" == "single" ]; then
 fi
 
 if [ "$SSL" == "true" ]; then
-    STARTER_ARGS="$STARTER_ARGS --ssl.keyfile=/cfg/server.pem"
+    STARTER_ARGS="$STARTER_ARGS --ssl.keyfile=/data/server.pem"
     SCHEME=https
     ARANGOSH_SCHEME=http+ssl
 fi
@@ -46,21 +46,21 @@ if [ "$EXTENDED_NAMES" == "true" ]; then
     STARTER_ARGS="${STARTER_ARGS} --all.database.extended-names=true"
 fi
 
-# cfg data volume
-docker create -v /cfg --name cfg alpine:3 /bin/true
-docker cp "$LOCATION"/jwtSecret cfg:/cfg
-docker cp "$LOCATION"/server.pem cfg:/cfg
+# data volume
+docker create -v /data --name arangodb-data alpine:3 /bin/true
+docker cp "$LOCATION"/jwtSecret arangodb-data:/data
+docker cp "$LOCATION"/server.pem arangodb-data:/data
 
 docker run -d \
     --name=adb \
     -p 8528:8528 \
-    --volumes-from cfg \
+    --volumes-from arangodb-data \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e ARANGO_LICENSE_KEY="$ARANGO_LICENSE_KEY" \
     $STARTER_DOCKER_IMAGE \
     $STARTER_ARGS \
     --docker.container=adb \
-    --auth.jwt-secret=/cfg/jwtSecret \
+    --auth.jwt-secret=/data/jwtSecret \
     --starter.address="${GW}" \
     --docker.image="${DOCKER_IMAGE}" \
     --starter.local --starter.mode=${STARTER_MODE} --all.log.level=debug --all.log.output=+ --log.verbose --all.server.descriptors-minimum=1024

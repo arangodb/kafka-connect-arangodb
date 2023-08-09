@@ -6,12 +6,17 @@ docker pull $DOCKER_IMAGE
 KAFKA_BOOTSTRAP_SERVERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
 LOCATION=$(pwd)/$(dirname "$0")
 
+
+# data volume
+docker create -v /tmp --name kafka-connect-data alpine:3 /bin/true
+docker cp "$LOCATION"/../target kafka-connect-data:/tmp/kafka-connect-arangodb
+docker cp "$LOCATION"/../src/test/resources/test.truststore kafka-connect-data:/tmp
+
 docker run -d \
   --name kafka-connect-1 -h kafka-connect-1 \
   --network arangodb \
   -p 18083:8083 \
-  -v "$LOCATION"/../target:/usr/share/java/kafka-connect-arangodb \
-  -v "$LOCATION"/../src/test/resources/test.truststore:/tmp/test.truststore \
+  --volumes-from kafka-connect-data \
   -e CONNECT_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
   -e CONNECT_GROUP_ID="kafka-connect" \
   -e CONNECT_CONFIG_STORAGE_TOPIC="kafka-connect.config" \
@@ -26,15 +31,14 @@ docker run -d \
   -e CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="1" \
-  -e CONNECT_PLUGIN_PATH="/usr/share/java" \
+  -e CONNECT_PLUGIN_PATH="/tmp" \
   $DOCKER_IMAGE
 
 docker run -d \
   --name kafka-connect-2 -h kafka-connect-2 \
   --network arangodb \
   -p 28083:8083 \
-  -v "$LOCATION"/../target:/usr/share/java/kafka-connect-arangodb \
-  -v "$LOCATION"/../src/test/resources/test.truststore:/tmp/test.truststore \
+  --volumes-from kafka-connect-data \
   -e CONNECT_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \
   -e CONNECT_GROUP_ID="kafka-connect" \
   -e CONNECT_CONFIG_STORAGE_TOPIC="kafka-connect.config" \
@@ -49,7 +53,7 @@ docker run -d \
   -e CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR="1" \
   -e CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="1" \
-  -e CONNECT_PLUGIN_PATH="/usr/share/java" \
+  -e CONNECT_PLUGIN_PATH="/tmp" \
   $DOCKER_IMAGE
 
 wait_server() {
