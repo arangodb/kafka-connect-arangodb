@@ -1,10 +1,14 @@
 package com.arangodb.kafka;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDBException;
 import com.arangodb.entity.ErrorEntity;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.deployment.ArangoDbDeployment;
+import com.arangodb.kafka.utils.MemoryAppender;
 import com.arangodb.kafka.utils.Utils;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
@@ -16,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -71,6 +76,7 @@ class ErrorHandlingTest {
                 .add(DATA_ERRORS_TOLERANCE, DataErrorsTolerance.ALL.toString())
                 .add(DATA_ERRORS_LOG_ENABLE, "true");
 
+        MemoryAppender logs = interceptLogger(ArangoWriter.class);
         Mockito.when(context.errantRecordReporter()).thenReturn(null);
 
         ArangoWriter writer = new ArangoWriter(new ArangoSinkConfig(cfg), col, context);
@@ -78,6 +84,14 @@ class ErrorHandlingTest {
         Mockito.when(col.insertDocument(any(), any())).thenThrow(dataException);
 
         writer.put(Collections.singleton(record));
+
+        assertThat(logs.getLogs().stream()).anySatisfy(it -> {
+            assertThat(it.getLevel()).isEqualTo(Level.WARN);
+            assertThat(it.getFormattedMessage())
+                    .contains("Got exception while processing record")
+                    .contains("key=key")
+                    .contains("value={}");
+        });
     }
 
     @Test
@@ -178,6 +192,16 @@ class ErrorHandlingTest {
         }
 
         return new ArangoDBException(ee);
+    }
+
+    private MemoryAppender interceptLogger(Class<?> name) {
+        Logger logger = (Logger) LoggerFactory.getLogger(name);
+        MemoryAppender memoryAppender = new MemoryAppender();
+        memoryAppender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
+        logger.setLevel(Level.DEBUG);
+        logger.addAppender(memoryAppender);
+        memoryAppender.start();
+        return memoryAppender;
     }
 
 }
