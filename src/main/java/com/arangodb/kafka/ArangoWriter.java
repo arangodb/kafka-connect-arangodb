@@ -17,10 +17,43 @@ import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ArangoWriter {
     private final static Logger LOG = LoggerFactory.getLogger(ArangoWriter.class);
+    private final static Set<Integer> DATA_ERROR_NUMS = new HashSet<>(Arrays.asList(
+            600,    // invalid JSON object
+            1208,   // illegal name (document violating smart collection key)
+            1210,   // unique constraint violated
+            1216,   // document too large
+            1221,   // illegal document key
+            1222,   // unexpected document key
+            1226,   // missing document key
+            1233,   // edge attribute missing or invalid
+            1466,   // must not specify _key for this collection (_key is required to contain the shard key of both vertex collections)
+            1469,   // must not change the value of a shard key attribute (_to shard key x differs from the 'to' part in the _key y)
+            1504,   // number out of range
+            1505,   // invalid geo coordinate value
+            1524,   // too much nesting or too many objects
+            1542,   // invalid argument type in call to function
+            1543,   // invalid regex value
+            1561,   // invalid arithmetic value
+            1562,   // division by zero
+            1563,   // array expected
+            1569,   // FAIL(%s) called
+            1572,   // invalid date value
+            1578,   // disallowed dynamic call
+            1593,   // computed values expression evaluation produced a runtime error
+            1594,   // computed values expression evaluation produced a runtime error
+            1620,   // schema validation failed
+            4001,   // smart graph attribute not given
+            4003,   // in smart vertex collections _key must be a string and prefixed with the value of the smart graph attribute
+            4010    // non-disjoint edge found
+    ));
+
     private final ArangoCollection col;
     private final ErrantRecordReporter reporter;
     private final SinkTaskContext context;
@@ -68,7 +101,7 @@ public class ArangoWriter {
                 remainingRetries = maxRetries;
                 LOG.trace("Completed handling record");
             } catch (Exception e) {
-                if (isFatalException(e)) {
+                if (isDataException(e)) {
                     reportException(record, e);
                 } else {
                     handleTransientException(record, e);
@@ -103,26 +136,14 @@ public class ArangoWriter {
         col.insertDocument(doc, createOptions);
     }
 
-    private boolean isFatalException(Exception ex) {
+    private boolean isDataException(Exception ex) {
         if (ex instanceof DataException) {
             return true;
         }
 
         if (ex instanceof ArangoDBException) {
             ArangoDBException e = (ArangoDBException) ex;
-            Integer responseCode = e.getResponseCode();
-            if (responseCode == null || responseCode < 400 || responseCode >= 500) {
-                return false;
-            }
-
-            Integer errorNum = e.getErrorNum();
-            return errorNum != 18 &&        // lock timeout
-                    errorNum != 1004 &&     // read only, i.e. not enough replicas for write-concern
-                    errorNum != 1429 &&     // not enough replicas for write-concern
-                    errorNum != 1200 &&     // write-write conflicts
-                    errorNum != 21004 &&    // queue time violated
-                    responseCode != 408 &&  // request timeout
-                    responseCode != 420;    // too many requests
+            return DATA_ERROR_NUMS.contains(e.getErrorNum());
         }
 
         return false;
