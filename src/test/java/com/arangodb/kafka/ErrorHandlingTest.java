@@ -176,6 +176,25 @@ class ErrorHandlingTest {
         verify(reporter, never()).report(any(), any());
     }
 
+    @Test
+    void extraDataErrorsNums() {
+        Map<String, Object> cfg = config()
+                .add(DATA_ERRORS_TOLERANCE, DataErrorsTolerance.NONE.toString())
+                .add(EXTRA_DATA_ERRORS_NUMS, "1,2,1004");
+
+        Mockito.when(context.errantRecordReporter()).thenReturn(reporter);
+
+        ArangoWriter writer = new ArangoWriter(new ArangoSinkConfig(cfg), col, context);
+        SinkRecord record = new SinkRecord("topic", 1, null, "key", null, map(), 0);
+        Mockito.when(col.insertDocument(any(), any())).thenThrow(transientException);
+
+        Throwable thrown = catchThrowable(() -> writer.put(Collections.singleton(record)));
+        assertThat(thrown).isInstanceOf(DataException.class);
+        assertThat(thrown.getCause()).isInstanceOf(ArangoDBException.class);
+
+        verify(reporter, never()).report(any(), any());
+    }
+
     private ArangoDBException createException(int code, int errNum) {
         ErrorEntity ee = new ErrorEntity();
 

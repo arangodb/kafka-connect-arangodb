@@ -224,6 +224,12 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String DATA_ERRORS_LOG_ENABLE_DOC =
             "If true, write each data error and the details of the failed operation and problematic record to the Connect application log.";
     private static final String DATA_ERRORS_LOG_ENABLE_DISPLAY = "Log Data Errors";
+
+    public static final String EXTRA_DATA_ERRORS_NUMS = "extra.data.errors.nums";
+    public static final List<?> EXTRA_DATA_ERRORS_NUMS_DEFAULT = Collections.emptyList();
+    public static final String EXTRA_DATA_ERRORS_NUMS_DOC = "Additional db error numbers (field `errorNum`) to consider "
+            + "data errors.";
+    public static final String EXTRA_DATA_ERRORS_NUMS_DISPLAY = "Extra Data Errors Numbers";
     //endregion
 
     //region retries
@@ -548,6 +554,17 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Width.SHORT,
                     DATA_ERRORS_LOG_ENABLE_DISPLAY
             )
+            .define(
+                    EXTRA_DATA_ERRORS_NUMS,
+                    ConfigDef.Type.LIST,
+                    EXTRA_DATA_ERRORS_NUMS_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    EXTRA_DATA_ERRORS_NUMS_DOC,
+                    ERROR_HANDLING_GROUP,
+                    3,
+                    ConfigDef.Width.MEDIUM,
+                    EXTRA_DATA_ERRORS_NUMS_DISPLAY
+            )
             //endregion
 
             // region retries
@@ -743,6 +760,12 @@ public class ArangoSinkConfig extends AbstractConfig {
     public Set<HostDescription> getEndpoints() {
         return getList(CONNECTION_ENDPOINTS).stream()
                 .map(HostDescription::parse)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Integer> getExtraDataErrorsNums() {
+        return getList(EXTRA_DATA_ERRORS_NUMS).stream()
+                .map(Integer::parseInt)
                 .collect(Collectors.toSet());
     }
 

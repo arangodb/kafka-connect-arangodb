@@ -67,6 +67,7 @@ public class ArangoWriter {
     private final boolean tolerateDataErrors;
     private final boolean logDataErrors;
     private int remainingRetries;
+    private Set<Integer> extraDataErrorsNums;
 
     public ArangoWriter(ArangoSinkConfig config, ArangoCollection col, SinkTaskContext context) {
         createOptions = config.getCreateOptions();
@@ -77,6 +78,7 @@ public class ArangoWriter {
         remainingRetries = maxRetries;
         tolerateDataErrors = config.getTolerateDataErrors();
         logDataErrors = config.getLogDataErrors();
+        extraDataErrorsNums = config.getExtraDataErrorsNums();
 
         this.col = col;
         this.context = context;
@@ -150,11 +152,14 @@ public class ArangoWriter {
     private ConnectException wrapException(Exception e) {
         if (e instanceof DataException) {
             return (DataException) e;
-        } else if (e instanceof ArangoDBException && DATA_ERROR_NUMS.contains(((ArangoDBException) e).getErrorNum())) {
-            return new DataException(e);
-        } else {
-            return new TransientException(e);
         }
+        if (e instanceof ArangoDBException) {
+            Integer errNum = ((ArangoDBException) e).getErrorNum();
+            if (DATA_ERROR_NUMS.contains(errNum) || extraDataErrorsNums.contains(errNum)) {
+                return new DataException(e);
+            }
+        }
+        return new TransientException(e);
     }
 
     private void handleDataException(SinkRecord record, DataException e) {
