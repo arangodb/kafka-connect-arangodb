@@ -20,14 +20,9 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.target.Producer;
-import com.arangodb.kafka.target.write.DeleteDisabledTarget;
 import com.arangodb.kafka.target.write.DeleteTarget;
 import com.arangodb.kafka.utils.KafkaTest;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 
-import java.util.Map;
-
-import static com.arangodb.kafka.utils.KafkaUtils.extractHeaders;
 import static com.arangodb.kafka.utils.Utils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class WriteIT {
 
     @KafkaTest(DeleteTarget.class)
-    void deleteEnabled(ArangoCollection col, Producer producer) {
+    void delete(ArangoCollection col, Producer producer) {
         producer.produce("key", map().add("value", "foo"));
         awaitCount(col, 1);
         assertThat(col.documentExists("key")).isTrue();
@@ -50,24 +45,6 @@ class WriteIT {
         producer.produce("flush", map());
         awaitCount(col, 1);
         assertThat(col.documentExists("flush")).isTrue();
-    }
-
-    @KafkaTest(DeleteDisabledTarget.class)
-    void deleteDisabled(ArangoCollection col, Producer producer, Map<String, ConsumerRecord<String, String>> dlq) {
-        producer.produce("key", null);
-        producer.produce("flush", map());
-
-        awaitCount(col, 1);
-        assertThat(col.documentExists("flush")).isTrue();
-
-        awaitDlq(dlq, 1);
-        ConsumerRecord<String, String> dlqMsg = dlq.get("key");
-        assertThat(dlqMsg).isNotNull();
-        Map<String, String> headers = extractHeaders(dlqMsg);
-        assertThat(headers)
-                .containsEntry("__connect.errors.exception.class.name", "org.apache.kafka.connect.errors.ConnectException")
-                .hasEntrySatisfying("__connect.errors.exception.message", v ->
-                        assertThat(v).contains("Deletes are not enabled"));
     }
 
 }

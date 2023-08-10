@@ -17,10 +17,43 @@ import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ArangoWriter {
     private final static Logger LOG = LoggerFactory.getLogger(ArangoWriter.class);
+    private final static Set<Integer> DATA_ERROR_NUMS = new HashSet<>(Arrays.asList(
+            600,    // invalid JSON object
+            1208,   // illegal name (document violating smart collection key)
+            1210,   // unique constraint violated
+            1216,   // document too large
+            1221,   // illegal document key
+            1222,   // unexpected document key
+            1226,   // missing document key
+            1233,   // edge attribute missing or invalid
+            1466,   // must not specify _key for this collection (_key is required to contain the shard key of both vertex collections)
+            1469,   // must not change the value of a shard key attribute (_to shard key x differs from the 'to' part in the _key y)
+            1504,   // number out of range
+            1505,   // invalid geo coordinate value
+            1524,   // too much nesting or too many objects
+            1542,   // invalid argument type in call to function
+            1543,   // invalid regex value
+            1561,   // invalid arithmetic value
+            1562,   // division by zero
+            1563,   // array expected
+            1569,   // FAIL(%s) called
+            1572,   // invalid date value
+            1578,   // disallowed dynamic call
+            1593,   // computed values expression evaluation produced a runtime error
+            1594,   // computed values expression evaluation produced a runtime error
+            1620,   // schema validation failed
+            4001,   // smart graph attribute not given
+            4003,   // in smart vertex collections _key must be a string and prefixed with the value of the smart graph attribute
+            4010    // non-disjoint edge found
+    ));
+
     private final ArangoCollection col;
     private final ErrantRecordReporter reporter;
     private final SinkTaskContext context;
@@ -31,21 +64,29 @@ public class ArangoWriter {
     private final boolean deleteEnabled;
     private final int maxRetries;
     private final int retryBackoffMs;
-    private final boolean tolerateTransientErrors;
+    private final boolean tolerateDataErrors;
+    private final boolean logDataErrors;
     private int remainingRetries;
+    private Set<Integer> extraDataErrorsNums;
 
-    public ArangoWriter(ArangoSinkConfig config, ArangoCollection col, ErrantRecordReporter reporter, SinkTaskContext context) {
+    public ArangoWriter(ArangoSinkConfig config, ArangoCollection col, SinkTaskContext context) {
         createOptions = config.getCreateOptions();
         deleteOptions = config.getDeleteOptions();
         deleteEnabled = config.isDeleteEnabled();
         retryBackoffMs = config.getRetryBackoffMs();
         maxRetries = config.getMaxRetries();
         remainingRetries = maxRetries;
-        tolerateTransientErrors = config.tolerateTransientErrors();
+        tolerateDataErrors = config.getTolerateDataErrors();
+        logDataErrors = config.getLogDataErrors();
+        extraDataErrorsNums = config.getExtraDataErrorsNums();
 
         this.col = col;
-        this.reporter = reporter;
         this.context = context;
+
+        reporter = context.errantRecordReporter();
+        if (reporter == null) {
+            LOG.warn("Errant record reporter not configured.");
+        }
 
         keyConverter = new KeyConverter();
         converter = new RecordConverter(keyConverter);
@@ -59,28 +100,33 @@ public class ArangoWriter {
         LOG.trace("Handling {} record(s)", records.size());
         for (SinkRecord record : records) {
             try {
-                LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-                if (record.key() != null && record.value() == null) {
-                    handleDelete(record);
-                } else {
-                    handleInsert(record);
-                }
-                remainingRetries = maxRetries;
-                LOG.trace("Completed handling record");
-            } catch (Exception e) {
-                if (isFatalException(e)) {
-                    reportException(record, e);
-                } else {
-                    handleTransientException(record, e);
-                }
+                handleRecord(record);
+            } catch (DataException e) {
+                handleDataException(record, e);
+            } catch (TransientException e) {
+                handleTransientException(e);
             }
+        }
+    }
+
+    private void handleRecord(SinkRecord record) {
+        try {
+            LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
+            if (record.key() != null && record.value() == null) {
+                handleDelete(record);
+            } else {
+                handleInsert(record);
+            }
+            LOG.trace("Completed handling record");
+            remainingRetries = maxRetries;
+        } catch (Exception e) {
+            throw wrapException(e);
         }
     }
 
     private void handleDelete(SinkRecord record) {
         if (!deleteEnabled) {
-            throw new ConnectException("Deletes are not enabled. To enable set: "
-                    + ArangoSinkConfig.DELETE_ENABLED + "=true");
+            throw new ConnectException("Deletes are not enabled.");
         }
 
         String key = keyConverter.convert(record);
@@ -103,52 +149,43 @@ public class ArangoWriter {
         col.insertDocument(doc, createOptions);
     }
 
-    private boolean isFatalException(Exception ex) {
-        if (ex instanceof DataException) {
-            return true;
+    private ConnectException wrapException(Exception e) {
+        if (e instanceof DataException) {
+            return (DataException) e;
         }
-
-        if (ex instanceof ArangoDBException) {
-            ArangoDBException e = (ArangoDBException) ex;
-            Integer responseCode = e.getResponseCode();
-            if (responseCode == null || responseCode < 400 || responseCode >= 500) {
-                return false;
+        if (e instanceof ArangoDBException) {
+            Integer errNum = ((ArangoDBException) e).getErrorNum();
+            if (DATA_ERROR_NUMS.contains(errNum) || extraDataErrorsNums.contains(errNum)) {
+                return new DataException(e);
             }
-
-            Integer errorNum = e.getErrorNum();
-            return errorNum != 18 &&        // lock timeout
-                    errorNum != 1004 &&     // read only, i.e. not enough replicas for write-concern
-                    errorNum != 1429 &&     // not enough replicas for write-concern
-                    errorNum != 1200 &&     // write-write conflicts
-                    errorNum != 21004 &&    // queue time violated
-                    responseCode != 408 &&  // request timeout
-                    responseCode != 420;    // too many requests
         }
-
-        return false;
+        return new TransientException(e);
     }
 
-    private void reportException(SinkRecord record, Exception e) {
-        if (reporter != null) {
-            LOG.debug("Reporting exception to DLQ:", e);
-            reporter.report(record, e);
-            remainingRetries = maxRetries;
+    private void handleDataException(SinkRecord record, DataException e) {
+        if (logDataErrors) {
+            LOG.warn("Got exception while processing record: {}", record, e);
+        }
+        if (tolerateDataErrors) {
+            if (reporter != null) {
+                LOG.debug("Reporting exception to DLQ:", e);
+                reporter.report(record, e);
+            } else {
+                LOG.debug("Ignoring exception:", e);
+            }
         } else {
-            throw new ConnectException(e);
+            throw e;
         }
     }
 
-    private void handleTransientException(SinkRecord record, Exception e) {
+    private void handleTransientException(TransientException e) {
         if (remainingRetries > 0) {
             remainingRetries--;
             context.timeout(retryBackoffMs);
             throw new RetriableException(e);
         } else {
-            if (tolerateTransientErrors) {
-                reportException(record, e);
-            } else {
-                throw new ConnectException(e);
-            }
+            remainingRetries = maxRetries;
+            throw e;
         }
     }
 
