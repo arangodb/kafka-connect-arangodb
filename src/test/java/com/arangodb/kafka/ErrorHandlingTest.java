@@ -29,7 +29,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class RetryTest {
+class ErrorHandlingTest {
     private Utils.FluentMap<String, Object> config() {
         return map()
                 .add(CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints())
@@ -139,6 +139,24 @@ class RetryTest {
         Throwable thrown2 = catchThrowable(() -> writer.put(Collections.singleton(record)));
         assertThat(thrown2).isInstanceOf(TransientException.class);
         assertThat(thrown2.getCause()).isInstanceOf(ArangoDBException.class);
+
+        verify(context, never()).timeout(anyLong());
+        verify(reporter, never()).report(any(), any());
+    }
+
+    @Test
+    void deleteDisabled() {
+        Map<String, Object> cfg = config().add(MAX_RETRIES, "0");
+
+        Mockito.when(context.errantRecordReporter()).thenReturn(reporter);
+
+        ArangoWriter writer = new ArangoWriter(new ArangoSinkConfig(cfg), col, context);
+        SinkRecord record = new SinkRecord("topic", 1, null, "key", null, null, 0);
+
+        Throwable thrown = catchThrowable(() -> writer.put(Collections.singleton(record)));
+        assertThat(thrown)
+                .isInstanceOf(TransientException.class)
+                .hasMessageContaining("Deletes are not enabled");
 
         verify(context, never()).timeout(anyLong());
         verify(reporter, never()).report(any(), any());

@@ -25,7 +25,8 @@ public class DlqIT {
         assertThat(dlqMsg).isNotNull();
         Map<String, String> headers = extractHeaders(dlqMsg);
         assertThat(headers)
-                .containsEntry("__connect.errors.exception.class.name", "com.arangodb.ArangoDBException")
-                .containsEntry("__connect.errors.exception.message", "Response: 400, Error: 1221 - illegal document key");
+                .containsEntry("__connect.errors.exception.class.name", "org.apache.kafka.connect.errors.DataException")
+                .hasEntrySatisfying("__connect.errors.exception.message", v ->
+                        assertThat(v).contains("Response: 400, Error: 1221 - illegal document key"));
     }
 }
