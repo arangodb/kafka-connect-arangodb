@@ -37,6 +37,8 @@ class ArangoSinkConfigTest {
         assertThat(config.getRetryBackoffMs()).isEqualTo(3000);
         assertThat(config.isAcquireHostListEnabled()).isFalse();
         assertThat(config.getAcquireHostIntervalMs()).isEqualTo(60_000);
+        assertThat(config.getTolerateDataErrors()).isFalse();
+        assertThat(config.getLogDataErrors()).isFalse();
     }
 
     @Test

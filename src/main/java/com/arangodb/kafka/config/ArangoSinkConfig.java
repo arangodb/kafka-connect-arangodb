@@ -61,7 +61,7 @@ public class ArangoSinkConfig extends AbstractConfig {
         UPDATE
     }
 
-    public enum TransientErrorsTolerance {
+    public enum DataErrorsTolerance {
         ALL,
         NONE
     }
@@ -211,13 +211,19 @@ public class ArangoSinkConfig extends AbstractConfig {
     //region error handling
     private static final String ERROR_HANDLING_GROUP = "Errors Handling";
 
-    public static final String TRANSIENT_ERRORS_TOLERANCE = "transient.errors.tolerance";
-    private static final String TRANSIENT_ERRORS_TOLERANCE_DEFAULT = TransientErrorsTolerance.NONE.toString();
-    private static final String TRANSIENT_ERRORS_TOLERANCE_DOC =
-            "Whether transient errors, after all potential retries failed, will be tolerated:\n"
-                    + "``none``: transient errors will cause a connector task failure\n"
-                    + "``all``: transient errors will be reported to the DLQ";
-    private static final String TRANSIENT_ERRORS_TOLERANCE_DISPLAY = "Transient Errors Tolerance";
+    public static final String DATA_ERRORS_TOLERANCE = "data.errors.tolerance";
+    private static final String DATA_ERRORS_TOLERANCE_DEFAULT = DataErrorsTolerance.NONE.toString();
+    private static final String DATA_ERRORS_TOLERANCE_DOC =
+            "Whether data errors will be tolerated:\n"
+                    + "``none``: data errors will result in an immediate connector task failure\n"
+                    + "``all``: data errors will be tolerated and reported to the DLQ, if configured";
+    private static final String DATA_ERRORS_TOLERANCE_DISPLAY = "Data Errors Tolerance";
+
+    public static final String DATA_ERRORS_LOG_ENABLE = "data.errors.log.enable";
+    private static final boolean DATA_ERRORS_LOG_ENABLE_DEFAULT = false;
+    private static final String DATA_ERRORS_LOG_ENABLE_DOC =
+            "If true, write each data error and the details of the failed operation and problematic record to the Connect application log.";
+    private static final String DATA_ERRORS_LOG_ENABLE_DISPLAY = "Log Data Errors";
     //endregion
 
     //region retries
@@ -519,17 +525,28 @@ public class ArangoSinkConfig extends AbstractConfig {
 
             // region error handling
             .define(
-                    TRANSIENT_ERRORS_TOLERANCE,
+                    DATA_ERRORS_TOLERANCE,
                     ConfigDef.Type.STRING,
-                    TRANSIENT_ERRORS_TOLERANCE_DEFAULT,
-                    new EnumValidator(TransientErrorsTolerance.class),
+                    DATA_ERRORS_TOLERANCE_DEFAULT,
+                    new EnumValidator(DataErrorsTolerance.class),
                     ConfigDef.Importance.MEDIUM,
-                    TRANSIENT_ERRORS_TOLERANCE_DOC,
+                    DATA_ERRORS_TOLERANCE_DOC,
                     ERROR_HANDLING_GROUP,
-                    3,
+                    1,
                     ConfigDef.Width.MEDIUM,
-                    TRANSIENT_ERRORS_TOLERANCE_DISPLAY,
-                    new EnumRecommender(TransientErrorsTolerance.class)
+                    DATA_ERRORS_TOLERANCE_DISPLAY,
+                    new EnumRecommender(DataErrorsTolerance.class)
+            )
+            .define(
+                    DATA_ERRORS_LOG_ENABLE,
+                    ConfigDef.Type.BOOLEAN,
+                    DATA_ERRORS_LOG_ENABLE_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    DATA_ERRORS_LOG_ENABLE_DOC,
+                    ERROR_HANDLING_GROUP,
+                    2,
+                    ConfigDef.Width.SHORT,
+                    DATA_ERRORS_LOG_ENABLE_DISPLAY
             )
             //endregion
 
@@ -701,10 +718,14 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getInt(RETRY_BACKOFF_MS);
     }
 
-    public boolean tolerateTransientErrors() {
-        TransientErrorsTolerance value = TransientErrorsTolerance.valueOf(
-                getString(TRANSIENT_ERRORS_TOLERANCE).toUpperCase(Locale.ROOT));
-        return TransientErrorsTolerance.ALL.equals(value);
+    public boolean getTolerateDataErrors() {
+        DataErrorsTolerance value = DataErrorsTolerance.valueOf(
+                getString(DATA_ERRORS_TOLERANCE).toUpperCase(Locale.ROOT));
+        return DataErrorsTolerance.ALL.equals(value);
+    }
+
+    public boolean getLogDataErrors() {
+        return getBoolean(DATA_ERRORS_LOG_ENABLE);
     }
 
     public String getUser() {

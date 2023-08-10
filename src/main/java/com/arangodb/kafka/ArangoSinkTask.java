@@ -48,11 +48,7 @@ public class ArangoSinkTask extends SinkTask {
 
         ArangoSinkConfig config = new ArangoSinkConfig(props);
         col = config.createCollection();
-        ErrantRecordReporter reporter = context.errantRecordReporter();
-        if (reporter == null) {
-            LOG.warn("Errant record reporter not configured.");
-        }
-        writer = new ArangoWriter(config, col, reporter, context);
+        writer = new ArangoWriter(config, col, context);
         config.logUnused();
 
         testConnectivity();
