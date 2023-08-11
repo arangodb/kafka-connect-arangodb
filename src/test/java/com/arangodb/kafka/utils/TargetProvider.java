@@ -1,8 +1,8 @@
 package com.arangodb.kafka.utils;
 
 import com.arangodb.ArangoCollection;
-import com.arangodb.kafka.deployment.KafkaConnectDeployment;
-import com.arangodb.kafka.deployment.KafkaConnectOperations;
+import deployment.KafkaConnectDeployment;
+import deployment.KafkaConnectOperations;
 import com.arangodb.kafka.target.Producer;
 import com.arangodb.kafka.target.TargetHolder;
 import com.arangodb.kafka.target.TestTarget;

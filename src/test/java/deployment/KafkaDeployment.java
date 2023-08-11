@@ -16,25 +16,17 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.deployment;
+package deployment;
 
-public interface KafkaConnectDeployment {
+public interface KafkaDeployment {
 
-    static KafkaConnectDeployment getInstance() {
-        String kafkaConnectHost = getKafkaConnectHost();
-        if (kafkaConnectHost != null && !kafkaConnectHost.isEmpty()) {
-            return ClusterKafkaConnectDeployment.INSTANCE;
-        } else {
-            return StandaloneKafkaConnectDeployment.INSTANCE;
-        }
+    static KafkaDeployment getInstance() {
+        return ExternalKafkaDeployment.INSTANCE;
     }
 
-    static String getKafkaConnectHost() {
-        return System.getProperty("kafka.connect.host");
+    static String getKafkaBootstrapServers() {
+        return System.getProperty("kafka.bootstrap.servers", "172.28.0.1:19092,172.28.0.1:29092,172.28.0.1:39092");
     }
 
     String getBootstrapServers();
-
-    KafkaConnectOperations client();
-
 }

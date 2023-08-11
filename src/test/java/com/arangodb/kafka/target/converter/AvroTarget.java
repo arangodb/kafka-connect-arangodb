@@ -18,7 +18,7 @@
 
 package com.arangodb.kafka.target.converter;
 
-import com.arangodb.kafka.deployment.SchemaRegistryDeployment;
+import deployment.SchemaRegistryDeployment;
 import com.arangodb.kafka.target.TestTarget;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;

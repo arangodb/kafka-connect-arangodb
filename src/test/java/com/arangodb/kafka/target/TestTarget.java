@@ -20,8 +20,8 @@ package com.arangodb.kafka.target;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import com.arangodb.kafka.deployment.ArangoDbDeployment;
-import com.arangodb.kafka.deployment.KafkaConnectDeployment;
+import deployment.ArangoDbDeployment;
+import deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.utils.Config;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;

@@ -16,19 +16,12 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.deployment;
+package deployment;
 
 public class SchemaRegistryDeployment {
 
     public static String getSchemaRegistryUrlConnect() {
-        Class<?> kafkaDeploymentClass = KafkaConnectDeployment.getInstance().getClass();
-        if (kafkaDeploymentClass == StandaloneKafkaConnectDeployment.class) {
-            return "http://172.28.0.1:8081";
-        } else if (kafkaDeploymentClass == ClusterKafkaConnectDeployment.class) {
-            return "http://schema-registry:8081";
-        } else {
-            throw new IllegalStateException("Unknown KafkaConnectDeployment class: " + kafkaDeploymentClass);
-        }
+        return KafkaConnectDeployment.getInstance().getSchemaRegistryUrlConnect();
     }
 
     public static String getSchemaRegistryUrlClient() {

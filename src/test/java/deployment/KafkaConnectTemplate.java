@@ -16,7 +16,7 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.deployment;
+package deployment;
 
 import org.sourcelab.kafka.connect.apiclient.Configuration;
 import org.sourcelab.kafka.connect.apiclient.KafkaConnectClient;
@@ -25,10 +25,10 @@ import org.sourcelab.kafka.connect.apiclient.request.dto.NewConnectorDefinition;
 import java.util.Collection;
 import java.util.Map;
 
-class KafkaConnectTemplate implements KafkaConnectOperations {
+public class KafkaConnectTemplate implements KafkaConnectOperations {
     private final KafkaConnectClient client;
 
-    KafkaConnectTemplate(String kafkaConnectHost) {
+    public KafkaConnectTemplate(String kafkaConnectHost) {
         client = new KafkaConnectClient(new Configuration(kafkaConnectHost));
     }
 

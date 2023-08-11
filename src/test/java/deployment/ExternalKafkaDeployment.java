@@ -16,7 +16,7 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.deployment;
+package deployment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

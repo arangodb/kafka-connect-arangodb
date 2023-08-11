@@ -7,7 +7,7 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDBException;
 import com.arangodb.entity.ErrorEntity;
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import com.arangodb.kafka.deployment.ArangoDbDeployment;
+import deployment.ArangoDbDeployment;
 import com.arangodb.kafka.utils.MemoryAppender;
 import com.arangodb.kafka.utils.Utils;
 import org.apache.kafka.connect.errors.DataException;
