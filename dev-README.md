@@ -20,12 +20,12 @@ Start test environment:
 KC=true STARTER_MODE=cluster ./docker/startup.sh
 ```
 
-Standalone integration tests:
+Integration tests with standalone Kafka Connect:
 ```shell
-mvn integration-test -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
+mvn integration-test -Pstandalone -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
 ```
 
-Cluster integration tests:
+Integration tests with cluster Kafka Connect:
 ```shell
-mvn integration-test -Dkafka.connect.host=http://172.28.0.1:18083 -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
+mvn integration-test -Pcluster -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
 ```

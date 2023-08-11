@@ -12,89 +12,113 @@ executors:
       - image: 'cimg/openjdk:20.0'
 
 jobs:
-  test:
+  test-standalone:
     parameters:
       jdk:
         type: 'string'
-        default: 'j17'
-      topology:
-        type: 'string'
+        default: 'j20'
       arango-version:
         type: 'string'
         default: '3.11.2'
-      kafka-connect-host:
-        type: 'string'
-        default: ''
       arango-endpoints:
         type: 'string'
-        default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
-      ssl:
-        type: 'boolean'
-        default: false
-      it-tests:
-        type: 'string'
-        default: ''
+        default: '172.28.0.1:8529'
     environment:
-      STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
-      KAFKA_CONNECT_HOST: <<parameters.kafka-connect-host>>
-      SSL: <<parameters.ssl>>
-      IT_TESTS: <<parameters.it-tests>>
     executor: <<parameters.jdk>>
     steps:
       - checkout
-      - run:
-          name: Package
-          command: |
-            if [ ! -z "$KAFKA_CONNECT_HOST" ]; then
-              mvn package
-            else
-              echo "Skipping..."
-            fi
       - setup_remote_docker
       - run:
           name: Create Kafka Environment
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Dkafka.connect.host=$KAFKA_CONNECT_HOST -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=$SSL -Dit.test=$IT_TESTS
+          command: mvn -e --no-transfer-progress integration-test -Pstandalone -Darango.endpoints=$ARANGO_ENDPOINTS
+
+  test-cluster:
+    parameters:
+      jdk:
+        type: 'string'
+        default: 'j17'
+      topology:
+        type: 'string'
+        default: 'cluster'
+      arango-version:
+        type: 'string'
+        default: '3.11.2'
+      arango-endpoints:
+        type: 'string'
+        default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
+    environment:
+      STARTER_MODE: <<parameters.topology>>
+      DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
+      ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
+      KC: 'true'
+    executor: <<parameters.jdk>>
+    steps:
+      - checkout
+      - run:
+          name: Package
+          command: mvn package
+      - setup_remote_docker
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Integration Tests
+          command: mvn -e --no-transfer-progress integration-test -Pcluster -Darango.endpoints=$ARANGO_ENDPOINTS
+
+  test-ssl:
+    parameters:
+      jdk:
+        type: 'string'
+        default: 'j11'
+      topology:
+        type: 'string'
+        default: 'cluster'
+      arango-version:
+        type: 'string'
+        default: '3.11.2'
+      arango-endpoints:
+        type: 'string'
+        default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
+    environment:
+      STARTER_MODE: <<parameters.topology>>
+      DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
+      ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
+      SSL: 'true'
+      KC: 'true'
+    executor: <<parameters.jdk>>
+    steps:
+      - checkout
+      - run:
+          name: Package
+          command: mvn package
+      - setup_remote_docker
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Integration Tests
+          command: mvn -e --no-transfer-progress integration-test -Pcluster -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
 
 workflows:
   test-standalone:
     jobs:
-      - test:
+      - test-standalone:
           name: test-standalone
-          matrix:
-            parameters:
-              topology:
-                - single
-              arango-endpoints:
-                - 172.28.0.1:8529
   test-cluster:
     jobs:
-      - test:
+      - test-cluster:
           name: test-cluster-<< matrix.jdk >>
           matrix:
             parameters:
               jdk:
                 - j11
                 - j17
-              topology:
-                - cluster
-              kafka-connect-host:
-                - http://172.28.0.1:18083
   test-ssl:
     jobs:
-      - test:
+      - test-ssl:
           name: test-ssl
-          matrix:
-            parameters:
-              topology:
-                - cluster
-              kafka-connect-host:
-                - http://172.28.0.1:18083
-              ssl:
-                - true
-              it-tests:
-                - com.arangodb.kafka.SslIT
