@@ -315,11 +315,15 @@
                 <version>3.1.2</version>
                 <executions>
                     <execution>
-                        <phase>integration-test</phase>
                         <goals>
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <kafka.connect.host>${kafka.connect.host}</kafka.connect.host>
+                            </systemPropertyVariables>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -445,7 +449,56 @@
                     <autoReleaseAfterClose>false</autoReleaseAfterClose>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>add-kafka-connect-impl</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${kafka.connect.impl}/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-kafka-connect-resources</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${kafka.connect.impl}/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>standalone</id>
+            <properties>
+                <kafka.connect.impl>src/connect-standalone</kafka.connect.impl>
+            </properties>
+        </profile>
+        <profile>
+            <id>cluster</id>
+            <properties>
+                <kafka.connect.impl>src/connect-cluster</kafka.connect.impl>
+                <kafka.connect.host>http://172.28.0.1:18083</kafka.connect.host>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
