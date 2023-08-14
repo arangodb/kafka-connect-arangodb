@@ -3,14 +3,27 @@
 The Kafka Connect ArangoDB Sink connector allows you to export data from Apache Kafka® to ArangoDB.
 It writes data from one or more topics in Kafka to a collection in ArangoDB.
 
-### Supported versions
+## Supported versions
 
 This connector is compatible with:
+
 - Kafka `2.x` (from version `2.6`) and Kafka `3.x` (all versions)
 - JDK 8 and higher versions
 - all the non-EOLed [ArangoDB versions](https://www.arangodb.com/eol-notice)
 
-### Delivery Guarantees
+## Installation
+
+Download the Jar file from [Maven Central](https://repo1.maven.org/maven2/com/arangodb/kafka-connect-arangodb) and copy
+it into one of the directories that are listed in the Kafka Connect worker's `plugin.path` configuration property. This
+must be done on each of the installations where Kafka Connect will be run.
+
+Once installed, you can then create a connector configuration file with the connector's settings, and deploy that to a
+Connect worker.
+
+See [here](https://docs.confluent.io/platform/current/connect/userguide.html#connect-installing-plugins) for more
+detailed instructions.
+
+## Delivery Guarantees
 
 This connector guarantees that each record in the Kafka topic is delivered at least once.
 For example, the same record could be delivered multiple times in the following scenarios:
@@ -30,11 +43,11 @@ To improve the likelihood that every write survives even in case of a db-server 
 configuration property `insert.waitForSync` (default `false`), which determines whether the write operations are synced
 to disk before returning.
 
-### Error handling
+## Error handling
 
 The connector categorizes all the possible errors into 2 types: data errors and transient errors.
 
-#### Data Errors
+### Data Errors
 
 These are errors that are unrecoverable and caused by the data being processed. For example:
 
@@ -58,14 +71,14 @@ Data errors detection can be further customized via the configuration property `
 In addition to the cases listed above, the server errors reporting `errorNums` listed by this configuration property
 will be considered data errors.
 
-#### Transient Errors
+### Transient Errors
 
 These are errors that are recoverable and could succeed if retried with some delay (see [Retries](#retries)).
 If all retries fail, then the connector task will fail.
 
 All errors that are not data errors are considered transient errors.
 
-### Retries
+## Retries
 
 In case of transient errors, the configuration property `max.retries` (default `10`) determines how many times the
 connector will retry.
@@ -75,7 +88,7 @@ an error before a retry attempt is made.
 
 Data errors are never retried.
 
-### Dead Letter Queue
+## Dead Letter Queue
 
 This connector supports the Dead Letter Queue (DLQ) functionality.
 For information about accessing and using the DLQ,
@@ -86,12 +99,12 @@ Only data errors can be reported to the DLQ. Transient errors, after potential r
 DLQ support for data errors can be enabled by setting `data.errors.tolerance=all`
 and `errors.deadletterqueue.topic.name`.
 
-### Multiple tasks
+## Multiple tasks
 
 The ArangoDB Sink connector supports running one or more tasks. You can specify the number of tasks in the `tasks.max`
 configuration parameter.
 
-### Data mapping
+## Data mapping
 
 The sink connector optionally supports schemas. For example, the Avro converter that comes with Schema Registry, the
 JSON converter with schemas enabled, or the Protobuf converter.
@@ -111,7 +124,7 @@ If the data in the topic is not of a compatible format, applying
 an [SMT](https://docs.confluent.io/platform/current/connect/transforms/overview.html) or implementing a custom converter
 may be necessary.
 
-### Key handling
+## Key handling
 
 The `_key` of the documents inserted into ArangoDB is derived in the following way:
 
@@ -119,7 +132,7 @@ The `_key` of the documents inserted into ArangoDB is derived in the following w
 2. use the Kafka record key if not null, else
 3. use the Kafka record coordinates (`topic-partition-offset`)
 
-### Delete mode
+## Delete mode
 
 The connector can delete documents in a database collection when it consumes a tombstone record, which is a Kafka record
 that has a non-null key and a null value. This behavior is disabled by default, meaning that any tombstone records will
@@ -129,7 +142,7 @@ Deletes can be enabled with `delete.enabled=true`.
 
 Enabling delete mode does not affect the `insert.overwriteMode`.
 
-### Write Modes
+## Write Modes
 
 The configuration parameter `insert.overwriteMode` allows setting the write behavior in case a document with the
 same `_key` already exists:
@@ -139,7 +152,7 @@ same `_key` already exists:
 - `replace`: the existing document is overwritten with the new document value
 - `update`: the existing document is patched (partially updated) with the new document value
 
-### Idempotent writes
+## Idempotent writes
 
 All the write modes supported are idempotent, with the exception that the document revision field (`_rev`) will change
 every time a document is written.
@@ -150,7 +163,7 @@ If there are failures, the Kafka offset used for recovery may not be up-to-date 
 of the failure, which can lead to re-processing during recovery. In case of `insert.overwriteMode=conflict` (default),
 this can lead to constraint violations errors if records need to be re-processed.
 
-### Ordering Guarantees
+## Ordering Guarantees
 
 Kafka records in the same Kafka topic partition mapped to documents with the same `_key` (see
 [Key handling](#key-handling)) will be written to ArangoDB in the same order as they are in the Kafka topic partition.
@@ -173,18 +186,18 @@ same `_key`.
 In such case, it will be possible to observe the related document in the database being temporarily updated to older
 versions and eventually to newer ones.
 
-### Monitoring
+## Monitoring
 
 The Kafka Connect framework exposes basic status information over a REST interface. Fine-grained metrics, including the
 number of processed messages and the rate of processing, are available via JMX. For more information, see
 [Monitoring Kafka Connect and Connectors](https://docs.confluent.io/current/connect/managing/monitoring.html)
 (published by Confluent, also applies to a standard Apache Kafka distribution).
 
-### SSL
+## SSL
 
 TODO
 
-### Current limitations
+## Current limitations
 
 - `VST` communication protocol is currently not working (DE-619)
 - documents are inserted one by one, bulk inserts will be implemented in a future release (DE-627)
@@ -194,5 +207,5 @@ TODO
 - `ssl.cert.value` does not support multiple certificates (DE-655)
 - batch inserts are not guaranteed to be executed serially
 - batch inserts could succeed for some documents while failing for others. This has 2 important consequences:
-  - transient errors might be retried and succeed at a later point
-  - data errors might be asynchronously reported to DLQ
+    - transient errors might be retried and succeed at a later point
+    - data errors might be asynchronously reported to DLQ
