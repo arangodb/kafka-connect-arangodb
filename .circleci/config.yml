@@ -1,6 +1,9 @@
 version: 2.1
 
 executors:
+  j8:
+    docker:
+      - image: 'cimg/openjdk:8.0'
   j11:
     docker:
       - image: 'cimg/openjdk:11.0'
@@ -120,6 +123,7 @@ workflows:
           matrix:
             parameters:
               jdk:
+                - j8
                 - j11
                 - j17
   test-ssl:
