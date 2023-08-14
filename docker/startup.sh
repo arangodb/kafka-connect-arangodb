@@ -7,7 +7,7 @@ KC=${KC:=false}
 # exit when any command fails
 set -e
 
-./docker/start_kafka.sh &
+./docker/start_kafka_zk.sh &
 ./docker/start_db.sh &
 if [ "$KC" == "true" ]; then
   sleep 1 && ./docker/start_kafka_connect.sh &
