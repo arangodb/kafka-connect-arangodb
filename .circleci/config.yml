@@ -41,7 +41,7 @@ jobs:
     parameters:
       jdk:
         type: 'string'
-        default: 'j17'
+        default: 'j11'
       topology:
         type: 'string'
         default: 'cluster'
@@ -51,11 +51,15 @@ jobs:
       arango-endpoints:
         type: 'string'
         default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
+      kafka-version:
+        type: 'string'
+        default: '3.5'
     environment:
       STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
       KC: 'true'
+      KAFKA_VERSION: <<parameters.kafka-version>>
     executor: <<parameters.jdk>>
     steps:
       - checkout
@@ -74,7 +78,7 @@ jobs:
     parameters:
       jdk:
         type: 'string'
-        default: 'j11'
+        default: 'j17'
       topology:
         type: 'string'
         default: 'cluster'
@@ -122,3 +126,19 @@ workflows:
     jobs:
       - test-ssl:
           name: test-ssl
+  test-kafka-versions:
+    jobs:
+      - test-distributed:
+          name: test-distributed-<< matrix.kafka-version >>
+          matrix:
+            parameters:
+              kafka-version:
+                - '3.5'
+                - '3.4'
+                - '3.3'
+                - '3.2'
+                - '3.1'
+                - '3.0'
+                - '2.8'
+                - '2.7.0'
+                - '2.6.0'
