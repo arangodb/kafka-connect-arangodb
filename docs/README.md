@@ -3,6 +3,13 @@
 The Kafka Connect ArangoDB Sink connector allows you to export data from Apache Kafka® to ArangoDB.
 It writes data from one or more topics in Kafka to a collection in ArangoDB.
 
+### Supported versions
+
+This connector is compatible with:
+- Kafka `2.x` (from version `2.6`) and Kafka `3.x` (all versions)
+- JDK 8 and higher versions
+- all the non-EOLed [ArangoDB versions](https://www.arangodb.com/eol-notice)
+
 ### Delivery Guarantees
 
 This connector guarantees that each record in the Kafka topic is delivered at least once.
