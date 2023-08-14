@@ -37,7 +37,7 @@ public class ArangoSinkTask extends SinkTask {
 
     @Override
     public String version() {
-        return "1.0.0-SNAPSHOT";
+        return PackageVersion.VERSION;
     }
 
     @Override

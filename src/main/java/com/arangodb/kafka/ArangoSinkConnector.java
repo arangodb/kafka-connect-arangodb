@@ -38,7 +38,7 @@ public class ArangoSinkConnector extends SinkConnector {
 
     @Override
     public String version() {
-        return "1.0.0-SNAPSHOT";
+        return PackageVersion.VERSION;
     }
 
     @Override
