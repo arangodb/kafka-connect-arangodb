@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 public class TargetProvider implements TestTemplateInvocationContextProvider {
     private static final KafkaConnectOperations connectClient = KafkaConnectDeployment.getInstance().client();
@@ -61,14 +62,17 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                                 new ParamSupplier<>(Producer.class, () -> target),
                                 new ParamSupplier<>(Map.class, target::getDlqRecords),
                                 (BeforeTestExecutionCallback) extensionContext -> {
+                                    assumeTrue(target.isEnabled());
                                     target.init();
                                     connectClient.createConnector(target.getConfig());
                                     assertThat(target.getCollection().count().getCount()).isEqualTo(0L);
                                     assertThat(target.getDlqRecords().size()).isEqualTo(0L);
                                 },
                                 (AfterTestExecutionCallback) extensionContext -> {
-                                    connectClient.deleteConnector(target.getName());
-                                    target.close();
+                                    if (target.isInitialized()) {
+                                        connectClient.deleteConnector(target.getName());
+                                        target.close();
+                                    }
                                 }
                         );
                     }

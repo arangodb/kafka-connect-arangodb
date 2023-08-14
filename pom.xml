@@ -489,14 +489,25 @@
     <profiles>
         <profile>
             <id>standalone</id>
+            <activation>
+                <property>
+                    <name>!distributed</name>
+                </property>
+            </activation>
             <properties>
                 <kafka.connect.impl>src/connect-standalone</kafka.connect.impl>
+                <kafka.connect.host>http://127.0.0.1:8083</kafka.connect.host>
             </properties>
         </profile>
         <profile>
-            <id>cluster</id>
+            <id>distributed</id>
+            <activation>
+                <property>
+                    <name>distributed</name>
+                </property>
+            </activation>
             <properties>
-                <kafka.connect.impl>src/connect-cluster</kafka.connect.impl>
+                <kafka.connect.impl>src/connect-distributed</kafka.connect.impl>
                 <kafka.connect.host>http://172.28.0.1:18083</kafka.connect.host>
             </properties>
         </profile>

@@ -1,6 +1,10 @@
 #!/bin/bash
 
-DOCKER_IMAGE=docker.io/bitnami/kafka:3.4
+# exit when any command fails
+set -e
+
+KAFKA_VERSION=${KAFKA_VERSION:=latest}
+DOCKER_IMAGE=docker.io/bitnami/kafka:$KAFKA_VERSION
 docker pull $DOCKER_IMAGE
 
 docker run -d \

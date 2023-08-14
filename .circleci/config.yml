@@ -35,9 +35,9 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Pstandalone -Darango.endpoints=$ARANGO_ENDPOINTS
+          command: mvn -e --no-transfer-progress integration-test -Darango.endpoints=$ARANGO_ENDPOINTS
 
-  test-cluster:
+  test-distributed:
     parameters:
       jdk:
         type: 'string'
@@ -68,7 +68,7 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Pcluster -Darango.endpoints=$ARANGO_ENDPOINTS
+          command: mvn -e --no-transfer-progress integration-test -Ddistributed -Darango.endpoints=$ARANGO_ENDPOINTS
 
   test-ssl:
     parameters:
@@ -102,17 +102,17 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Pcluster -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
+          command: mvn -e --no-transfer-progress integration-test -Ddistributed -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
 
 workflows:
   test-standalone:
     jobs:
       - test-standalone:
           name: test-standalone
-  test-cluster:
+  test-distributed:
     jobs:
-      - test-cluster:
-          name: test-cluster-<< matrix.jdk >>
+      - test-distributed:
+          name: test-distributed-<< matrix.jdk >>
           matrix:
             parameters:
               jdk:
