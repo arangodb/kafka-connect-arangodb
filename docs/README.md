@@ -3,27 +3,6 @@
 The Kafka Connect ArangoDB Sink connector allows you to export data from Apache Kafka® to ArangoDB.
 It writes data from one or more topics in Kafka to a collection in ArangoDB.
 
-Auto-creation of ArangoDB collection is not supported.
-
-## Features
-
-The ArangoDB Sink connector includes the following features:
-
-- Delivery Guarantees
-- Error handling
-- Retries
-- Dead Letter Queue
-- Multiple tasks
-- Data mapping
-- Key handling
-- Delete mode
-- Write Modes
-- Idempotent writes
-- Ordering Guarantees
-- Monitoring
-- Compatibility
-- SSL
-
 ### Delivery Guarantees
 
 This connector guarantees that each record in the Kafka topic is delivered at least once.
@@ -197,3 +176,16 @@ number of processed messages and the rate of processing, are available via JMX. 
 ### SSL
 
 TODO
+
+### Current limitations
+
+- `VST` communication protocol is currently not working (DE-619)
+- documents are inserted one by one, bulk inserts will be implemented in a future release (DE-627)
+- in case of transient error, the entire Kafka Connect batch is retried (DE-651)
+- record values are required to be object-like structures (DE-644)
+- auto-creation of ArangoDB collection is not supported (DE-653)
+- `ssl.cert.value` does not support multiple certificates (DE-655)
+- batch inserts are not guaranteed to be executed serially
+- batch inserts could succeed for some documents while failing for others. This has 2 important consequences:
+  - transient errors might be retried and succeed at a later point
+  - data errors might be asynchronously reported to DLQ
