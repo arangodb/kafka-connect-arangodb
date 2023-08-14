@@ -209,3 +209,8 @@ TODO
 - batch inserts could succeed for some documents while failing for others. This has 2 important consequences:
     - transient errors might be retried and succeed at a later point
     - data errors might be asynchronously reported to DLQ
+
+## Demo
+
+Check out our [demo](https://github.com/arangodb/kafka-connect-arangodb/tree/main/demo) to learn more about Kafka
+Connect ArangoDB Connector.
