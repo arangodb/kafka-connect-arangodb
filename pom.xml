@@ -62,6 +62,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kafka.version>3.4.1</kafka.version>
         <confluent.version>7.4.0</confluent.version>
+        <arangodb.version>7.1.0</arangodb.version>
         <jackson.version>2.13.5</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
     </properties>
@@ -83,7 +84,7 @@
         <dependency>
             <groupId>com.arangodb</groupId>
             <artifactId>arangodb-java-driver</artifactId>
-            <version>7.1.0</version>
+            <version>${arangodb.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -106,12 +107,12 @@
         <dependency>
             <groupId>com.arangodb</groupId>
             <artifactId>vst-protocol</artifactId>
-            <version>7.1.0</version>
+            <version>${arangodb.version}</version>
         </dependency>
         <dependency>
             <groupId>com.arangodb</groupId>
             <artifactId>jackson-serde-vpack</artifactId>
-            <version>7.1.0</version>
+            <version>${arangodb.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -237,7 +238,7 @@
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
-                <version>5.9.3</version>
+                <version>5.10.0</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -319,13 +320,18 @@
                             <goal>integration-test</goal>
                             <goal>verify</goal>
                         </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <kafka.connect.host>${kafka.connect.host}</kafka.connect.host>
+                            </systemPropertyVariables>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.1.0</version>
                 <configuration>
                     <gpgArguments>
                         <arg>--pinentry-mode</arg>
@@ -345,7 +351,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.4.1</version>
+                <version>1.5.0</version>
                 <configuration>
                     <flattenMode>oss</flattenMode>
                 </configuration>
@@ -444,7 +450,67 @@
                     <autoReleaseAfterClose>false</autoReleaseAfterClose>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>add-kafka-connect-impl</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${kafka.connect.impl}/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-kafka-connect-resources</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${kafka.connect.impl}/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>standalone</id>
+            <activation>
+                <property>
+                    <name>!distributed</name>
+                </property>
+            </activation>
+            <properties>
+                <kafka.connect.impl>src/connect-standalone</kafka.connect.impl>
+                <kafka.connect.host>http://127.0.0.1:8083</kafka.connect.host>
+            </properties>
+        </profile>
+        <profile>
+            <id>distributed</id>
+            <activation>
+                <property>
+                    <name>distributed</name>
+                </property>
+            </activation>
+            <properties>
+                <kafka.connect.impl>src/connect-distributed</kafka.connect.impl>
+                <kafka.connect.host>http://172.28.0.1:18083</kafka.connect.host>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

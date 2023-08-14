@@ -20,8 +20,8 @@ package com.arangodb.kafka.target;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import com.arangodb.kafka.deployment.ArangoDbDeployment;
-import com.arangodb.kafka.deployment.KafkaConnectDeployment;
+import deployment.ArangoDbDeployment;
+import deployment.KafkaConnectDeployment;
 import com.arangodb.kafka.utils.Config;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
@@ -55,6 +55,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     private AdminClient adminClient;
     private final Map<String, ConsumerRecord<String, String>> dlqRecords;
     private ScheduledExecutorService dlqExecutor;
+    private boolean initialized = false;
 
     public TestTarget(String name) {
         this.name = name;
@@ -82,6 +83,11 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
             });
             dlqExecutor.scheduleAtFixedRate(this::consumeDlq, 50, 100, TimeUnit.MILLISECONDS);
         }
+        initialized = true;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 
     private void consumeDlq() {
@@ -116,6 +122,10 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     abstract public Object serializeRecordValue(Map<String, Object> data);
+
+    public boolean isEnabled() {
+        return true;
+    }
 
     public Map<String, Object> producerConfig() {
         Map<String, Object> cfg = new HashMap<>();

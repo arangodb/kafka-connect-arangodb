@@ -16,8 +16,12 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.deployment;
+package spi;
 
+import deployment.KafkaConnectDeployment;
+import deployment.KafkaConnectOperations;
+import deployment.KafkaConnectTemplate;
+import deployment.KafkaDeployment;
 import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.connect.connector.policy.AllConnectorClientConfigOverridePolicy;
 import org.apache.kafka.connect.runtime.Connect;
@@ -32,12 +36,30 @@ import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 import java.util.HashMap;
 import java.util.Map;
 
-enum StandaloneKafkaConnectDeployment implements KafkaConnectDeployment {
-    INSTANCE;
+public class StandaloneKafkaConnectDeployment extends KafkaConnectDeployment {
 
     private final KafkaDeployment kafka = KafkaDeployment.getInstance();
 
-    StandaloneKafkaConnectDeployment() {
+    public StandaloneKafkaConnectDeployment() {
+    }
+
+    @Override
+    public String getBootstrapServers() {
+        return kafka.getBootstrapServers();
+    }
+
+    @Override
+    public KafkaConnectOperations client() {
+        return new KafkaConnectTemplate("http://127.0.0.1:8083");
+    }
+
+    @Override
+    public String getSchemaRegistryUrlConnect() {
+        return "http://172.28.0.1:8081";
+    }
+
+    @Override
+    public void start() {
         Map<String, String> workerProps = new HashMap<>();
         workerProps.put("bootstrap.servers", kafka.getBootstrapServers());
         workerProps.put("plugin.path", "target/classes");
@@ -65,16 +87,6 @@ enum StandaloneKafkaConnectDeployment implements KafkaConnectDeployment {
         rest.initializeServer();
 
         new Connect(herder, rest).start();
-    }
-
-    @Override
-    public String getBootstrapServers() {
-        return kafka.getBootstrapServers();
-    }
-
-    @Override
-    public KafkaConnectOperations client() {
-        return new KafkaConnectTemplate("http://127.0.0.1:8083");
     }
 
 }

@@ -16,29 +16,31 @@
  * Copyright holder is ArangoDB GmbH, Cologne, Germany
  */
 
-package com.arangodb.kafka.deployment;
+package spi;
 
+import deployment.KafkaConnectDeployment;
+import deployment.KafkaConnectOperations;
+import deployment.KafkaConnectTemplate;
+import deployment.KafkaDeployment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
-enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
-    INSTANCE;
+public class ClusterKafkaConnectDeployment extends KafkaConnectDeployment {
 
+    private static Logger LOG = LoggerFactory.getLogger(ClusterKafkaConnectDeployment.class);
     private final String kafkaBootstrapServers;
     private final String kafkaConnectHost;
 
-    ClusterKafkaConnectDeployment() {
-        Logger log = LoggerFactory.getLogger(ClusterKafkaConnectDeployment.class);
-
+    public ClusterKafkaConnectDeployment() {
         kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
-        log.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
+        LOG.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
         Objects.requireNonNull(kafkaBootstrapServers);
         assert !kafkaBootstrapServers.isEmpty();
 
-        kafkaConnectHost = KafkaConnectDeployment.getKafkaConnectHost();
-        log.info("Using kafka.connect.host: {}", kafkaConnectHost);
+        kafkaConnectHost = getKafkaConnectHost();
+        LOG.info("Using kafka.connect.host: {}", kafkaConnectHost);
         Objects.requireNonNull(kafkaConnectHost);
         assert !kafkaConnectHost.isEmpty();
     }
@@ -51,6 +53,16 @@ enum ClusterKafkaConnectDeployment implements KafkaConnectDeployment {
     @Override
     public KafkaConnectOperations client() {
         return new KafkaConnectTemplate(kafkaConnectHost);
+    }
+
+    @Override
+    public String getSchemaRegistryUrlConnect() {
+        return "http://schema-registry:8081";
+    }
+
+    @Override
+    public void start() {
+        // no-op
     }
 
 }
