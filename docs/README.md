@@ -18,7 +18,7 @@ it into one of the directories that are listed in the Kafka Connect worker's `pl
 must be done on each of the installations where Kafka Connect will be run.
 
 Once installed, you can then create a connector configuration file with the connector's settings, and deploy that to a
-Connect worker.
+Connect worker, see [configuration documentation](./configuration.md).
 
 See [here](https://docs.confluent.io/platform/current/connect/userguide.html#connect-installing-plugins) for more
 detailed instructions.
@@ -195,7 +195,25 @@ number of processed messages and the rate of processing, are available via JMX. 
 
 ## SSL
 
-TODO
+To connect to ArangoDB using an SSL connection, the configuration property `ssl.enabled` must be set to `true`.
+
+### Certificate from file
+
+The connector can load the trust store to be used from file. The following configuration properties can be used:
+
+- `ssl.truststore.location`: the location of the trust store file
+- `ssl.truststore.password`: the password for the trust store file
+
+Note that the trust store file path will need to be accessible from all Kafka Connect workers.
+
+### Certificate from configuration property value
+
+The connector can accept the SSL certificate value from configuration property encoded as base64 string. The following
+configuration properties can be used:
+
+- `ssl.cert.value`: base64 encoded SSL certificate
+
+See [SSL configuration](./configuration.md#ssl) for further options.
 
 ## Current limitations
 
