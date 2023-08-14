@@ -88,7 +88,7 @@ class ErrorHandlingTest {
         assertThat(logs.getLogs().stream()).anySatisfy(it -> {
             assertThat(it.getLevel()).isEqualTo(Level.WARN);
             assertThat(it.getFormattedMessage())
-                    .contains("Got exception while processing record")
+                    .contains("Got data exception while processing record")
                     .contains("key=key")
                     .contains("value={}");
         });

@@ -22,7 +22,6 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.entity.Permissions;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -43,10 +42,10 @@ public class ArangoSinkTask extends SinkTask {
 
     @Override
     public void start(Map<String, String> props) {
-        LOG.info("Starting ArangoSinkTask.");
-        LOG.info("task config: {}", props);
+        LOG.info("starting ArangoSinkTask");
 
         ArangoSinkConfig config = new ArangoSinkConfig(props);
+        LOG.info("task config: {}", config);
         col = config.createCollection();
         writer = new ArangoWriter(config, col, context);
         config.logUnused();
@@ -62,18 +61,19 @@ public class ArangoSinkTask extends SinkTask {
 
     @Override
     public void stop() {
-        LOG.info("Stopping ArangoSinkTask.");
+        LOG.info("stopping ArangoSinkTask");
         if (col != null) {
             col.db().arango().shutdown();
         }
     }
 
     private void testConnectivity() {
+        LOG.info("testing connectivity to ArangoDB");
         Exception lastException = null;
         for (int i = 0; i < 10; i++) {
             try {
                 String version = col.db().getVersion().getVersion();
-                LOG.debug("Connected to ArangoDB: {}", version);
+                LOG.info("Connected to ArangoDB: {}", version);
                 return;
             } catch (Exception e) {
                 LOG.warn("Got exception while testing connectivity to ArangoDB.", e);
@@ -84,7 +84,9 @@ public class ArangoSinkTask extends SinkTask {
     }
 
     private void testPermissions(String user) {
+        LOG.info("testing permissions to write ArangoDB");
         Permissions permissions = col.getPermissions(user);
+        LOG.info("granted permissions: {}", permissions);
         if (!Permissions.RW.equals(permissions)) {
             throw new ConnectException("User [" + user + "] has no write permissions for target collection [" + col.name() + "]");
         }

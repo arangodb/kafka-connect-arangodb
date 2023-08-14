@@ -67,7 +67,7 @@ public class ArangoWriter {
     private final boolean tolerateDataErrors;
     private final boolean logDataErrors;
     private int remainingRetries;
-    private Set<Integer> extraDataErrorsNums;
+    private final Set<Integer> extraDataErrorsNums;
 
     public ArangoWriter(ArangoSinkConfig config, ArangoCollection col, SinkTaskContext context) {
         createOptions = config.getCreateOptions();
@@ -85,7 +85,7 @@ public class ArangoWriter {
 
         reporter = context.errantRecordReporter();
         if (reporter == null) {
-            LOG.warn("Errant record reporter not configured.");
+            LOG.info("Errant record reporter not configured.");
         }
 
         keyConverter = new KeyConverter();
@@ -104,7 +104,7 @@ public class ArangoWriter {
             } catch (DataException e) {
                 handleDataException(record, e);
             } catch (TransientException e) {
-                handleTransientException(e);
+                handleTransientException(record, e);
             }
         }
     }
@@ -136,7 +136,7 @@ public class ArangoWriter {
         } catch (ArangoDBException e) {
             if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
                 // Response: 404, Error: 1202 - document not found
-                LOG.trace("Deleting document not found: {}", key);
+                LOG.debug("Deleting document not found: {}", key);
             } else {
                 throw e;
             }
@@ -164,7 +164,7 @@ public class ArangoWriter {
 
     private void handleDataException(SinkRecord record, DataException e) {
         if (logDataErrors) {
-            LOG.warn("Got exception while processing record: {}", record, e);
+            LOG.warn("Got data exception while processing record: {}", record, e);
         }
         if (tolerateDataErrors) {
             if (reporter != null) {
@@ -178,8 +178,10 @@ public class ArangoWriter {
         }
     }
 
-    private void handleTransientException(TransientException e) {
+    private void handleTransientException(SinkRecord record, TransientException e) {
+        LOG.debug("Got transient exception while processing record: {}", record, e);
         if (remainingRetries > 0) {
+            LOG.debug("remaining retries: {}", remainingRetries);
             remainingRetries--;
             context.timeout(retryBackoffMs);
             throw new RetriableException(e);

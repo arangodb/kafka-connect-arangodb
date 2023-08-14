@@ -28,12 +28,15 @@ import org.apache.kafka.connect.json.JsonConverterConfig;
 import org.apache.kafka.connect.json.JsonDeserializer;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.storage.ConverterType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 public class RecordConverter {
+    private final static Logger LOG = LoggerFactory.getLogger(RecordConverter.class);
 
     private final JsonDeserializer deserializer;
     private final JsonConverter jsonConverter;
@@ -50,6 +53,7 @@ public class RecordConverter {
     }
 
     public ObjectNode convert(SinkRecord record) {
+        LOG.debug("Converting value for record: {}", record);
         byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.valueSchema(), record.value());
         JsonNode node = Optional.ofNullable(deserialize(bytes))
                 .orElseGet(JsonNodeFactory.instance::objectNode);
@@ -61,6 +65,7 @@ public class RecordConverter {
         String keyFromField = KeyConverter.mapKey(data.get("_key"));
         String key = keyFromField != null ? keyFromField : keyConverter.convert(record);
         data.put("_key", key);
+        LOG.debug("Converted record value: {}", data);
         return data;
     }
 

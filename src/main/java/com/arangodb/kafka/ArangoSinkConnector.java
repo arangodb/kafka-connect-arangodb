@@ -82,6 +82,7 @@ public class ArangoSinkConnector extends SinkConnector {
             Map<String, String> taskCfg = new HashMap<>(config);
             taskCfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, taskEndpoints);
             configs.add(taskCfg);
+            LOG.info("task #{} config: {}", i, new ArangoSinkConfig(taskCfg));
         }
         return configs;
     }

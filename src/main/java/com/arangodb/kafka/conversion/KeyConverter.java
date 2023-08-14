@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class KeyConverter {
     private final static Logger LOG = LoggerFactory.getLogger(KeyConverter.class);
@@ -47,13 +48,13 @@ public class KeyConverter {
     }
 
     public String convert(SinkRecord record) {
-        if (record.key() == null) {
-            return createKey(record);
-        }
+        LOG.debug("Extracting key for record: {}", record);
         byte[] bytes = jsonConverter.fromConnectData(record.topic(), record.keySchema(), record.key());
         JsonNode node = deserialize(bytes);
-        String key = mapKey(node);
-        return key != null ? key : createKey(record);
+        String key = Optional.ofNullable(mapKey(node)).orElseGet(() ->
+                String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset()));
+        LOG.debug("Assigning _key: {}", key);
+        return key;
     }
 
     public static String mapKey(JsonNode node) {
@@ -66,12 +67,6 @@ public class KeyConverter {
         } else {
             throw new DataException("Record key cannot be read as string: " + node.getClass().getName());
         }
-    }
-
-    private String createKey(SinkRecord record) {
-        String newKey = String.format("%s-%d-%d", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-        LOG.debug("Assigning _key: {}", newKey);
-        return newKey;
     }
 
     private JsonNode deserialize(byte[] bytes) {

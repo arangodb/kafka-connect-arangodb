@@ -37,6 +37,7 @@ public class HostListMonitor {
     }
 
     void start() {
+        LOG.info("starting host list monitor background task");
         updateHostList();
         es.scheduleAtFixedRate(this::monitorHosts, acquireHostIntervalMs, acquireHostIntervalMs, TimeUnit.MILLISECONDS);
     }
@@ -46,6 +47,7 @@ public class HostListMonitor {
     }
 
     public void stop() {
+        LOG.info("stopping host list monitor background task");
         adb.shutdown();
         es.shutdown();
         try {
@@ -83,6 +85,7 @@ public class HostListMonitor {
     }
 
     private boolean updateHostList() {
+        LOG.debug("Fetching host list.");
         Set<HostDescription> hosts = acquireHostList();
         if (!hosts.isEmpty() && !endpoints.equals(hosts)) {
             LOG.info("Detected change in the acquired host list: \n\t old: {} \n\t new: {}", endpoints, hosts);
