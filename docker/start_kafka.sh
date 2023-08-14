@@ -58,6 +58,19 @@ docker run -d \
   -e KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT \
   $DOCKER_IMAGE
 
+wait_server() {
+    # shellcheck disable=SC2091
+    until $(nc -z $1 $2); do
+        printf '.'
+        sleep 1
+    done
+}
+
+echo "Waiting..."
+wait_server 172.28.0.1 19092
+wait_server 172.28.0.1 29092
+wait_server 172.28.0.1 39092
+
 echo ""
 echo ""
 echo "Done, your deployment is reachable at: "

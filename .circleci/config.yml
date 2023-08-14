@@ -65,7 +65,7 @@ jobs:
       - checkout
       - run:
           name: Package
-          command: mvn package
+          command: mvn package -Ddistributed
       - setup_remote_docker
       - run:
           name: Create Kafka Environment
@@ -99,7 +99,7 @@ jobs:
       - checkout
       - run:
           name: Package
-          command: mvn package
+          command: mvn package -Ddistributed
       - setup_remote_docker
       - run:
           name: Create Kafka Environment
