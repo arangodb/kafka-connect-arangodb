@@ -56,3 +56,4 @@ build/
 
 .idea
 .flattened-pom.xml
+/demo/data/connectors/kafka-connect-arangodb/*

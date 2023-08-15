@@ -1,14 +1,12 @@
 # kafka-connect-arangodb demo
 
-## Requirements
-
-This demo requires:
-
-- JDK 1.8+
-- `maven`
-- `docker`
-
 ## Prepare the environment
+
+Set package version:
+
+```shell
+export PACKAGE_VERSION=1.0.0-RC.1
+```
 
 Create the Docker network:
 
@@ -25,10 +23,10 @@ STARTER_MODE=cluster ./start_db.sh
 The deployed cluster will be accessible at [http://172.28.0.1:8529](http://172.28.0.1:8529) with username `root` and
 password `test`.
 
-Create package:
+Download package:
 
 ```shell
-mvn -f ../pom.xml -DskipTests=true package
+wget -P ./data/connectors/kafka-connect-arangodb/ "https://repo1.maven.org/maven2/com/arangodb/kafka-connect-arangodb/$PACKAGE_VERSION/kafka-connect-arangodb-$PACKAGE_VERSION.jar"
 ```
 
 Start docker compose environment:
@@ -78,7 +76,7 @@ Explore configuration options in the console at [http://172.28.0.1:8080/connect-
 or via:
 
 ```shell
-curl http://172.28.0.1:18083/connector-plugins/ArangoSinkConnector/config
+curl http://172.28.0.1:18083/connector-plugins/ArangoSinkConnector/config | jq
 ```
 
 Create sink connector:

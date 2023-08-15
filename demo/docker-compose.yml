@@ -2,7 +2,7 @@ version: "2"
 
 services:
   kafka-1:
-    image: docker.io/bitnami/kafka:3.4
+    image: docker.io/bitnami/kafka:3.5
     ports:
       - '19092:19092'
     environment:
@@ -19,7 +19,7 @@ services:
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
 
   kafka-2:
-    image: docker.io/bitnami/kafka:3.4
+    image: docker.io/bitnami/kafka:3.5
     ports:
       - '29092:29092'
     environment:
@@ -36,7 +36,7 @@ services:
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
 
   kafka-3:
-    image: docker.io/bitnami/kafka:3.4
+    image: docker.io/bitnami/kafka:3.5
     ports:
       - '39092:39092'
     environment:
@@ -53,7 +53,7 @@ services:
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
 
   kafka-connect-1:
-    image: confluentinc/cp-kafka-connect:7.4.0
+    image: docker.io/bitnami/kafka:3.5
     depends_on:
       - kafka-1
       - kafka-2
@@ -61,27 +61,14 @@ services:
     ports:
       - '18083:8083'
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
-      CONNECT_GROUP_ID: kafka-connect
-      CONNECT_CONFIG_STORAGE_TOPIC: kafka-connect.config
-      CONNECT_OFFSET_STORAGE_TOPIC: kafka-connect.offsets
-      CONNECT_STATUS_STORAGE_TOPIC: kafka-connect.status
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
-      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
-      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect-1"
-      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_PLUGIN_PATH: /usr/share/java
+      BITNAMI_DEBUG: true
     volumes:
-      - $PWD/../target:/usr/share/java/kafka-connect-arangodb
-      - $PWD/data/confluentinc-kafka-connect-datagen:/usr/share/java/confluentinc-kafka-connect-datagen
+      - $PWD/data/connect/connect-distributed-1.properties:/tmp/connect-distributed-1.properties
+      - $PWD/data/connectors:/tmp/connectors
+    command: /opt/bitnami/kafka/bin/connect-distributed.sh /tmp/connect-distributed-1.properties
 
   kafka-connect-2:
-    image: confluentinc/cp-kafka-connect:7.4.0
+    image: docker.io/bitnami/kafka:3.5
     depends_on:
       - kafka-1
       - kafka-2
@@ -89,24 +76,11 @@ services:
     ports:
       - '28083:8083'
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: "kafka-1:9092,kafka-2:9092,kafka-3:9092"
-      CONNECT_GROUP_ID: kafka-connect
-      CONNECT_CONFIG_STORAGE_TOPIC: kafka-connect.config
-      CONNECT_OFFSET_STORAGE_TOPIC: kafka-connect.offsets
-      CONNECT_STATUS_STORAGE_TOPIC: kafka-connect.status
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
-      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
-      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect-2"
-      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
-      CONNECT_PLUGIN_PATH: /usr/share/java
+      BITNAMI_DEBUG: true
     volumes:
-      - $PWD/../target:/usr/share/java/kafka-connect-arangodb
-      - $PWD/data/confluentinc-kafka-connect-datagen:/usr/share/java/confluentinc-kafka-connect-datagen
+      - $PWD/data/connect/connect-distributed-2.properties:/tmp/connect-distributed-2.properties
+      - $PWD/data/connectors:/tmp/connectors
+    command: /opt/bitnami/kafka/bin/connect-distributed.sh /tmp/connect-distributed-2.properties
 
   redpanda-console:
     image: docker.io/redpandadata/console:v2.2.4
