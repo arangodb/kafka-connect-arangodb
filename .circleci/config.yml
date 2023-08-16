@@ -42,7 +42,7 @@ jobs:
       - run:
           name: Create reports
           command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
-      - store_test_results:
+      - store_artifacts:
           path: target/site
 
   test-distributed:
@@ -84,7 +84,7 @@ jobs:
       - run:
           name: Create reports
           command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
-      - store_test_results:
+      - store_artifacts:
           path: target/site
 
   test-ssl:
@@ -123,7 +123,7 @@ jobs:
       - run:
           name: Create reports
           command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
-      - store_test_results:
+      - store_artifacts:
           path: target/site
 
 workflows:
