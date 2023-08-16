@@ -219,6 +219,12 @@
             <version>1.7.36</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>eu.rekawek.toxiproxy</groupId>
+            <artifactId>toxiproxy-java</artifactId>
+            <version>2.1.7</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -557,6 +563,14 @@
                 <kafka.connect.impl>src/connect-distributed</kafka.connect.impl>
                 <kafka.connect.host>http://172.28.0.1:18083</kafka.connect.host>
             </properties>
+        </profile>
+        <profile>
+            <id>resilienceTests</id>
+            <activation>
+                <property>
+                    <name>resilienceTests</name>
+                </property>
+            </activation>
         </profile>
     </profiles>
 

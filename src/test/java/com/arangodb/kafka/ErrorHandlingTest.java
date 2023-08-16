@@ -7,9 +7,9 @@ import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDBException;
 import com.arangodb.entity.ErrorEntity;
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import deployment.ArangoDbDeployment;
 import com.arangodb.kafka.utils.MemoryAppender;
 import com.arangodb.kafka.utils.Utils;
+import deployment.ArangoDbDeployment;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 class ErrorHandlingTest {
     private Utils.FluentMap<String, Object> config() {
         return map()
-                .add(CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints())
+                .add(CONNECTION_ENDPOINTS, ArangoDbDeployment.getInstance().getEndpoints())
                 .add(CONNECTION_COLLECTION, "RetryTest");
     }
 
