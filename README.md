@@ -1,7 +1,9 @@
 # kafka-connect-arangodb
-Kafka Connect connector for ArangoDB
+
+Kafka Connect ArangoDB Sink Connector
 
 ## Learn more
+
 - [ChangeLog](ChangeLog.md)
 - [Demo](./demo)
-- [Documentation](https://www.arangodb.com/docs/stable/drivers/)
+- [Documentation](https://www.arangodb.com/docs/stable/drivers/kafka-connector.html)
