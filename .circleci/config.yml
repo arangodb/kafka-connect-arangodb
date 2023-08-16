@@ -39,6 +39,11 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test -Darango.endpoints=$ARANGO_ENDPOINTS
+      - run:
+          name: Create reports
+          command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
+      - store_artifacts:
+          path: target/site
 
   test-distributed:
     parameters:
@@ -76,6 +81,11 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test -Ddistributed -Darango.endpoints=$ARANGO_ENDPOINTS
+      - run:
+          name: Create reports
+          command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
+      - store_artifacts:
+          path: target/site
 
   test-ssl:
     parameters:
@@ -110,6 +120,11 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test -Ddistributed -Darango.endpoints=$ARANGO_ENDPOINTS -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
+      - run:
+          name: Create reports
+          command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
+      - store_artifacts:
+          path: target/site
 
 workflows:
   test-standalone:
