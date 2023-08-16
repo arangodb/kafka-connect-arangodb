@@ -11,7 +11,7 @@
     <inceptionYear>2023</inceptionYear>
 
     <name>kafka-connect-arangodb</name>
-    <description>Kafka Connect connector for ArangoDB</description>
+    <description>Kafka Connect ArangoDB Sink Connector</description>
     <url>https://github.com/arangodb/kafka-connect-arangodb</url>
 
     <licenses>
