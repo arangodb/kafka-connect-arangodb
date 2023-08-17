@@ -1,6 +1,7 @@
 package com.arangodb.kafka.utils;
 
 import com.arangodb.ArangoCollection;
+import com.arangodb.kafka.config.ArangoSinkConfig;
 import deployment.KafkaConnectDeployment;
 import deployment.KafkaConnectOperations;
 import com.arangodb.kafka.target.Producer;
@@ -61,6 +62,7 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                                 new ParamSupplier<>(ArangoCollection.class, target::getCollection),
                                 new ParamSupplier<>(Producer.class, () -> target),
                                 new ParamSupplier<>(Map.class, target::getDlqRecords),
+                                new ParamSupplier<>(ArangoSinkConfig.class, () -> new ArangoSinkConfig(target.getConfig())),
                                 (BeforeTestExecutionCallback) extensionContext -> {
                                     assumeTrue(target.isEnabled());
                                     target.init();

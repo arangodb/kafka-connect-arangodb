@@ -1,6 +1,9 @@
 package com.arangodb.kafka.utils;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import com.arangodb.ArangoCollection;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -44,6 +47,15 @@ public final class Utils {
 
     public static IntPredicate gte(int v) {
         return x -> x >= v;
+    }
+
+    public static MemoryAppender interceptLogger(Class<?> name) {
+        Logger logger = (Logger) LoggerFactory.getLogger(name);
+        MemoryAppender memoryAppender = new MemoryAppender();
+        memoryAppender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
+        logger.addAppender(memoryAppender);
+        memoryAppender.start();
+        return memoryAppender;
     }
 
     public static class FluentMap<K, V> extends LinkedHashMap<K, V> {

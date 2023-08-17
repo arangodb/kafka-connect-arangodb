@@ -126,11 +126,50 @@ jobs:
       - store_artifacts:
           path: target/site
 
+  test-resilience:
+    parameters:
+      jdk:
+        type: 'string'
+        default: 'j20'
+      topology:
+        type: 'string'
+        default: 'cluster'
+      arango-version:
+        type: 'string'
+        default: '3.11.2'
+      arango-endpoints:
+        type: 'string'
+        default: '172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549'
+    environment:
+      STARTER_MODE: <<parameters.topology>>
+      DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
+      ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
+    executor: <<parameters.jdk>>
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Start ToxiProxy
+          command: ./bin/toxiproxy-server-linux-amd64
+      - run:
+          name: Integration Tests
+          command: mvn -e --no-transfer-progress integration-test -DresilienceTests -Darango.endpoints=$ARANGO_ENDPOINTS -Dit.test=com.arangodb.kafka.resilience.**
+      - run:
+          name: Create reports
+          command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
+      - store_artifacts:
+          path: target/site
+
 workflows:
+
   test-standalone:
     jobs:
       - test-standalone:
           name: test-standalone
+
   test-distributed:
     jobs:
       - test-distributed:
@@ -141,6 +180,7 @@ workflows:
                 - j8
                 - j11
                 - j17
+
   test-ssl:
     jobs:
       - test-ssl:
@@ -150,6 +190,7 @@ workflows:
               only: /^v.*/
             branches:
               ignore: /.*/
+
   test-kafka-versions:
     jobs:
       - test-distributed:
@@ -171,3 +212,13 @@ workflows:
                 - '2.8'
                 - '2.7.0'
                 - '2.6.0'
+
+  test-resilience:
+    jobs:
+      - test-resilience:
+          name: test-resilience
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/

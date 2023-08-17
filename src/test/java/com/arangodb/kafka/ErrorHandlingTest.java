@@ -1,15 +1,13 @@
 package com.arangodb.kafka;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDBException;
 import com.arangodb.entity.ErrorEntity;
 import com.arangodb.kafka.config.ArangoSinkConfig;
-import deployment.ArangoDbDeployment;
 import com.arangodb.kafka.utils.MemoryAppender;
 import com.arangodb.kafka.utils.Utils;
+import deployment.ArangoDbDeployment;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
@@ -20,13 +18,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 
 import static com.arangodb.kafka.config.ArangoSinkConfig.*;
+import static com.arangodb.kafka.utils.Utils.interceptLogger;
 import static com.arangodb.kafka.utils.Utils.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -37,7 +35,7 @@ import static org.mockito.Mockito.*;
 class ErrorHandlingTest {
     private Utils.FluentMap<String, Object> config() {
         return map()
-                .add(CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints())
+                .add(CONNECTION_ENDPOINTS, ArangoDbDeployment.getInstance().getEndpoints())
                 .add(CONNECTION_COLLECTION, "RetryTest");
     }
 
@@ -211,16 +209,6 @@ class ErrorHandlingTest {
         }
 
         return new ArangoDBException(ee);
-    }
-
-    private MemoryAppender interceptLogger(Class<?> name) {
-        Logger logger = (Logger) LoggerFactory.getLogger(name);
-        MemoryAppender memoryAppender = new MemoryAppender();
-        memoryAppender.setContext((LoggerContext) LoggerFactory.getILoggerFactory());
-        logger.setLevel(Level.DEBUG);
-        logger.addAppender(memoryAppender);
-        memoryAppender.start();
-        return memoryAppender;
     }
 
 }

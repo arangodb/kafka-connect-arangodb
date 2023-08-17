@@ -154,7 +154,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         cfg.put("errors.tolerance", "all");
         cfg.put("key.converter.schemas.enable", "false");
         cfg.put("value.converter.schemas.enable", "false");
-        cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getEndpoints());
+        cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getInstance().getEndpoints());
         cfg.put(ArangoSinkConfig.CONNECTION_USER, "root");
         cfg.put(ArangoSinkConfig.CONNECTION_PASSWORD, "test");
         cfg.put(ArangoSinkConfig.CONNECTION_DATABASE, "_system");
@@ -194,8 +194,10 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     private ArangoCollection createCollection() {
-        ArangoSinkConfig cfg = new ArangoSinkConfig(getConfig());
-        ArangoCollection col = cfg.createCollection();
+        Map<String, String> cfg = getConfig();
+        cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getInstance().getAdminEndpoints());
+        ArangoSinkConfig sinkConfig = new ArangoSinkConfig(cfg);
+        ArangoCollection col = sinkConfig.createCollection();
         if (col.exists()) {
             col.drop();
         }
