@@ -57,3 +57,4 @@ build/
 .idea
 .flattened-pom.xml
 /demo/data/connectors/kafka-connect-arangodb/*
+/bin/toxiproxy-server-linux-amd64

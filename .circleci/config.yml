@@ -144,6 +144,7 @@ jobs:
       STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: docker.io/arangodb/arangodb:<<parameters.arango-version>>
       ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
+      TOXIPROXY_VERSION: v2.5.0
     executor: <<parameters.jdk>>
     steps:
       - checkout
@@ -152,8 +153,8 @@ jobs:
           name: Create Kafka Environment
           command: ./docker/startup.sh
       - run:
-          name: Start ToxiProxy
-          command: "./bin/toxiproxy-server-linux-amd64 &"
+          name: Start Toxiproxy
+          command: ./bin/startProxy.sh
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test -DresilienceTests -Darango.endpoints=$ARANGO_ENDPOINTS -Dit.test=com.arangodb.kafka.resilience.**
