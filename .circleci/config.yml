@@ -153,7 +153,7 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Start ToxiProxy
-          command: ./bin/toxiproxy-server-linux-amd64 &
+          command: "./bin/toxiproxy-server-linux-amd64 &"
       - run:
           name: Integration Tests
           command: mvn -e --no-transfer-progress integration-test -DresilienceTests -Darango.endpoints=$ARANGO_ENDPOINTS -Dit.test=com.arangodb.kafka.resilience.**
