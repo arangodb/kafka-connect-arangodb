@@ -612,8 +612,12 @@ public class ArangoSinkConfig extends AbstractConfig {
         ensureValidSslConfig();
     }
 
+    public Protocol getConnectionProtocol() {
+        return Protocol.valueOf(getString(CONNECTION_PROTOCOL).toUpperCase(Locale.ROOT));
+    }
+
     private com.arangodb.Protocol getProtocol() {
-        Protocol protocol = Protocol.valueOf(getString(CONNECTION_PROTOCOL).toUpperCase(Locale.ROOT));
+        Protocol protocol = getConnectionProtocol();
         ContentType contentType = ContentType.valueOf(getString(CONNECTION_CONTENT_TYPE).toUpperCase(Locale.ROOT));
         if (Protocol.VST.equals(protocol)) {
             return com.arangodb.Protocol.VST;

@@ -183,7 +183,10 @@ public class ArangoWriter {
     private void handleDataException(SinkRecord record, DataException e) {
         if (logDataErrors) {
             LOG.warn("Got data exception while processing record: {}", record, e);
+        } else {
+            LOG.debug("Got data exception while processing record: {}", record, e);
         }
+
         if (tolerateDataErrors) {
             if (reporter != null) {
                 LOG.debug("Reporting exception to DLQ:", e);
@@ -197,9 +200,10 @@ public class ArangoWriter {
     }
 
     private void handleTransientException(SinkRecord record, TransientException e) {
+        LOG.warn("Got transient exception: ", e);
         LOG.debug("Got transient exception while processing record: {}", record, e);
         if (remainingRetries > 0) {
-            LOG.debug("remaining retries: {}", remainingRetries);
+            LOG.info("remaining retries: {}", remainingRetries);
             remainingRetries--;
             context.timeout(retryBackoffMs);
             throw new RetriableException(e);

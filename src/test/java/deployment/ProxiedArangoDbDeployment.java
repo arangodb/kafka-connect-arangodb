@@ -32,11 +32,12 @@ import java.util.stream.Collectors;
 enum ProxiedArangoDbDeployment implements ArangoDbDeployment {
     INSTANCE;
 
+    private final String endpoints;
     private final List<ProxiedEndpoint> proxiedEndpoints;
 
     ProxiedArangoDbDeployment() {
         Logger LOG = LoggerFactory.getLogger(ProxiedArangoDbDeployment.class);
-        String endpoints = System.getProperty("arango.endpoints", "172.28.0.1:8529");
+        endpoints = System.getProperty("arango.endpoints", "172.28.0.1:8529");
         LOG.info("Using arango.endpoints: {}", endpoints);
         assert !endpoints.isEmpty();
 
@@ -66,6 +67,11 @@ enum ProxiedArangoDbDeployment implements ArangoDbDeployment {
         return proxiedEndpoints.stream()
                 .map(it -> it.getHost() + ":" + it.getPort())
                 .collect(Collectors.joining(","));
+    }
+
+    @Override
+    public String getAdminEndpoints() {
+        return endpoints;
     }
 
     @Override

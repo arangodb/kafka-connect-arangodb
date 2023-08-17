@@ -1,13 +1,11 @@
 package deployment;
 
-import com.arangodb.config.HostDescription;
-
 import java.util.List;
 
 public interface ArangoDbDeployment {
 
     static ArangoDbDeployment getInstance() {
-        if (System.getProperty("resilienceTests") == null) {
+        if (!Boolean.parseBoolean(System.getProperty("resilienceTests"))) {
             return PlainArangoDbDeployment.INSTANCE;
         } else {
             return ProxiedArangoDbDeployment.INSTANCE;
@@ -15,6 +13,10 @@ public interface ArangoDbDeployment {
     }
 
     String getEndpoints();
+
+    default String getAdminEndpoints() {
+        return getEndpoints();
+    }
 
     default List<ProxiedEndpoint> getProxiedEndpoints() {
         throw new UnsupportedOperationException();
