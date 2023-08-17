@@ -1,12 +1,12 @@
 package com.arangodb.kafka.target.resilience;
 
-import com.arangodb.kafka.target.write.BaseWriteTarget;
+import com.arangodb.kafka.target.converter.JsonTarget;
 
 import java.util.Map;
 
 import static com.arangodb.kafka.config.ArangoSinkConfig.*;
 
-public class RetryTarget extends BaseWriteTarget {
+public class RetryTarget extends JsonTarget {
 
     public RetryTarget(String name) {
         super(name);
