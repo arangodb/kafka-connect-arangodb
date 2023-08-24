@@ -175,13 +175,16 @@ workflows:
   test-distributed:
     jobs:
       - test-distributed:
-          name: test-distributed-<< matrix.jdk >>
+          name: test-distributed-<< matrix.jdk >>-<< matrix.arango-version >>
           matrix:
             parameters:
               jdk:
                 - j8
                 - j11
                 - j17
+              arango-version:
+                - 3.11.3
+                - 3.10.10
 
   test-ssl:
     jobs:
