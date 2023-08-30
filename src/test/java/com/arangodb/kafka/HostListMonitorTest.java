@@ -27,7 +27,7 @@ public class HostListMonitorTest {
                 .add(ArangoSinkConfig.CONNECTION_ENDPOINTS, "a:1")
                 .add(ArangoSinkConfig.CONNECTION_COLLECTION, "HostListMonitorTest")
                 .add(ArangoSinkConfig.CONNECTION_ACQUIRE_HOST_LIST_ENABLED, "true")
-                .add(ArangoSinkConfig.CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS, "100");
+                .add(ArangoSinkConfig.CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS, "200");
     }
 
     @Mock
@@ -70,7 +70,7 @@ public class HostListMonitorTest {
         when(adb.execute(any(), any()))
                 .thenReturn(new Response<>(200, Collections.emptyMap(), resp2));
 
-        Thread.sleep(200);
+        Thread.sleep(250);
         assertThat(monitor.getEndpoints())
                 .hasSize(2)
                 .contains(new HostDescription("d", 4))
@@ -81,7 +81,7 @@ public class HostListMonitorTest {
         when(adb.execute(any(), any()))
                 .thenReturn(new Response<>(200, Collections.emptyMap(), resp3));
 
-        Thread.sleep(200);
+        Thread.sleep(250);
         assertThat(monitor.getEndpoints())
                 .hasSize(2)
                 .contains(new HostDescription("d", 4))
