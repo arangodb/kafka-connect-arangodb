@@ -4,15 +4,14 @@ import com.arangodb.ArangoDB;
 import com.arangodb.Response;
 import com.arangodb.config.HostDescription;
 import com.arangodb.kafka.config.ArangoSinkConfig;
+import com.arangodb.kafka.utils.MockTest;
 import com.arangodb.kafka.utils.Utils;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.connect.connector.ConnectorContext;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 
@@ -20,7 +19,7 @@ import static com.arangodb.kafka.utils.Utils.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@MockTest
 public class HostListMonitorTest {
     private Utils.FluentMap<String, Object> config() {
         return map()

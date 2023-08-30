@@ -6,6 +6,7 @@ import com.arangodb.ArangoDBException;
 import com.arangodb.entity.ErrorEntity;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.utils.MemoryAppender;
+import com.arangodb.kafka.utils.MockTest;
 import com.arangodb.kafka.utils.Utils;
 import deployment.ArangoDbDeployment;
 import org.apache.kafka.connect.errors.DataException;
@@ -14,10 +15,8 @@ import org.apache.kafka.connect.sink.ErrantRecordReporter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -31,7 +30,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@MockTest
 class ErrorHandlingTest {
     private Utils.FluentMap<String, Object> config() {
         return map()
