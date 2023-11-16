@@ -20,7 +20,7 @@ class ArangoSinkConfigTest {
     }
 
     @Test
-    void connectionDefaults() {
+    void defaults() {
         ArangoSinkConfig config = new ArangoSinkConfig(baseProps);
         assertThat(config.getString(ArangoSinkConfig.CONNECTION_DATABASE)).isEqualTo("_system");
         assertThat(config.getString(ArangoSinkConfig.CONNECTION_USER)).isEqualTo("root");
@@ -32,6 +32,7 @@ class ArangoSinkConfigTest {
         assertThat(config.getString(ArangoSinkConfig.INSERT_OVERWRITE_MODE))
                 .isEqualTo(ArangoSinkConfig.OverwriteMode.CONFLICT.toString());
         assertThat(config.getBoolean(ArangoSinkConfig.INSERT_MERGE_OBJECTS)).isTrue();
+        assertThat(config.getBatchSize()).isEqualTo(3_000);
         assertThat(config.getBoolean(ArangoSinkConfig.DELETE_ENABLED)).isFalse();
         assertThat(config.getMaxRetries()).isEqualTo(10);
         assertThat(config.getRetryBackoffMs()).isEqualTo(3000);
