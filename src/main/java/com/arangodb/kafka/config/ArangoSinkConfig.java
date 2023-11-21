@@ -719,14 +719,12 @@ public class ArangoSinkConfig extends AbstractConfig {
                 ))
                 .mergeObjects(getBoolean(INSERT_MERGE_OBJECTS))
                 .keepNull(true)
-                .silent(true)
                 .refillIndexCaches(false)
                 .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
     }
 
     public DocumentDeleteOptions getDeleteOptions() {
         return new DocumentDeleteOptions()
-                .silent(true)
                 .refillIndexCaches(false)
                 .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
     }
