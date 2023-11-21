@@ -40,7 +40,7 @@ public class HostListMonitorTest {
 
     @Test
     void acquireHostList() throws InterruptedException {
-        when(sinkConfig.createMonitorClient()).thenReturn(adb);
+        doReturn(adb).when(sinkConfig).createMonitorClient();
 
         HostListMonitor monitor = new HostListMonitor(sinkConfig, context);
         assertThat(monitor.getEndpoints())
