@@ -18,6 +18,7 @@
 
 package com.arangodb.kafka.target;
 
+import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -49,6 +50,7 @@ public class BaseTarget extends TestTarget {
         Map<String, String> cfg = super.getConfig();
         cfg.put(SinkConnectorConfig.KEY_CONVERTER_CLASS_CONFIG, StringConverter.class.getName());
         cfg.put(SinkConnectorConfig.VALUE_CONVERTER_CLASS_CONFIG, JsonConverter.class.getName());
+        cfg.put(ArangoSinkConfig.BATCH_SIZE, "2");
         return cfg;
     }
 
