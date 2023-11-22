@@ -48,7 +48,7 @@ public class HostListMonitor {
 
     public HostListMonitor(ArangoSinkConfig sinkConfig, ConnectorContext context) {
         acquireHostIntervalMs = sinkConfig.getAcquireHostIntervalMs();
-        endpoints = sinkConfig.getEndpoints();
+        endpoints = new HashSet<>(sinkConfig.getEndpoints());
         adb = sinkConfig.createMonitorClient();
         this.context = context;
         es = Executors.newSingleThreadScheduledExecutor();

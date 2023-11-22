@@ -35,7 +35,7 @@ public class ArangoSinkConnector extends SinkConnector {
     private static final Logger LOG = LoggerFactory.getLogger(SinkConnector.class);
     private Map<String, String> config;
     private boolean acquireHostList;
-    private Set<HostDescription> initialEndpoints;
+    private List<HostDescription> initialEndpoints;
     private HostListMonitor hostListMonitor;
 
     @Override

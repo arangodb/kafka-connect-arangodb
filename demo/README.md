@@ -5,7 +5,7 @@
 Set package version:
 
 ```shell
-export PACKAGE_VERSION=1.0.0
+export PACKAGE_VERSION=1.1.0
 ```
 
 Create the Docker network:
@@ -69,7 +69,7 @@ The messages produced can be checked at [http://172.28.0.1:8080/topics/orders](h
 Create db collection:
 
 ```shell
-curl -u root:test http://172.28.0.1:8529/_api/collection -d '{"name": "orders"}'
+curl -u root:test http://172.28.0.1:8529/_api/collection -d '{"name": "orders", "numberOfShards": 3}'
 ```
 
 Explore configuration options in the console at [http://172.28.0.1:8080/connect-clusters/kafka-connect/create-connector](http://172.28.0.1:8080/connect-clusters/kafka-connect/create-connector)

@@ -767,10 +767,10 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getInt(CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS);
     }
 
-    public Set<HostDescription> getEndpoints() {
+    public List<HostDescription> getEndpoints() {
         return getList(CONNECTION_ENDPOINTS).stream()
                 .map(HostDescription::parse)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     public Set<Integer> getExtraDataErrorsNums() {
