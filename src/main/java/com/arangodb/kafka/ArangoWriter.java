@@ -170,10 +170,10 @@ public class ArangoWriter {
 
     private void handleBatch(List<SinkRecord> batch) {
         if (LOG.isTraceEnabled()) {
-            LOG.trace("Handling batch of {} records:", batch.size());
-            for (SinkRecord record : batch) {
-                LOG.trace("{}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            }
+            String records = batch.stream()
+                    .map(it -> String.format("%s-%s-%s", it.topic(), it.kafkaPartition(), it.kafkaOffset()))
+                    .collect(Collectors.joining("\n\t", "\n\t", "\n"));
+            LOG.trace("Handling batch of {} records: {}", batch.size(), records);
         }
 
         try {
@@ -284,17 +284,14 @@ public class ArangoWriter {
     }
 
     private ConnectException wrapException(Exception e) {
-        if (e instanceof DataException) {
-            return (DataException) e;
+        if (e instanceof ConnectException) {
+            return (ConnectException) e;
         }
         if (e instanceof ArangoDBException) {
             Integer errNum = ((ArangoDBException) e).getErrorNum();
             if (isDataError(errNum)) {
                 return new DataException(e);
             }
-        }
-        if (e instanceof TransientException) {
-            return (TransientException) e;
         }
         return new TransientException(e);
     }

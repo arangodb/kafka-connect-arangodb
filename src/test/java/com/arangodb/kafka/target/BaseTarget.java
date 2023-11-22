@@ -50,7 +50,7 @@ public class BaseTarget extends TestTarget {
         Map<String, String> cfg = super.getConfig();
         cfg.put(SinkConnectorConfig.KEY_CONVERTER_CLASS_CONFIG, StringConverter.class.getName());
         cfg.put(SinkConnectorConfig.VALUE_CONVERTER_CLASS_CONFIG, JsonConverter.class.getName());
-        cfg.put(ArangoSinkConfig.BATCH_SIZE, "2");
+        cfg.put(ArangoSinkConfig.BATCH_SIZE, "3");
         return cfg;
     }
 

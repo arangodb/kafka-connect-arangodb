@@ -11,6 +11,7 @@ import com.arangodb.kafka.utils.MemoryAppender;
 import com.arangodb.kafka.utils.MockTest;
 import com.arangodb.kafka.utils.Utils;
 import deployment.ArangoDbDeployment;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.ErrantRecordReporter;
@@ -240,7 +241,7 @@ class ErrorHandlingTest {
 
         Throwable thrown = catchThrowable(() -> writer.put(Collections.singleton(record)));
         assertThat(thrown)
-                .isInstanceOf(TransientException.class)
+                .isInstanceOf(ConnectException.class)
                 .hasMessageContaining("Deletes are not enabled");
 
         verify(context, never()).timeout(anyLong());
