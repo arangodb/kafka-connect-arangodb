@@ -52,7 +52,7 @@ class OverwriteModeIT {
         assertThat(headers)
                 .containsEntry("__connect.errors.exception.class.name", "org.apache.kafka.connect.errors.DataException")
                 .hasEntrySatisfying("__connect.errors.exception.message", v ->
-                        assertThat(v).contains("Response: 409, Error: 1210 - unique constraint violated"));
+                        assertThat(v).contains("Error: 1210 - unique constraint violated"));
     }
 
     @KafkaTest(OverwriteModeIgnoreTarget.class)

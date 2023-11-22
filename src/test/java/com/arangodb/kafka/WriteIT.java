@@ -30,6 +30,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 class WriteIT {
 
     @KafkaTest(DeleteTarget.class)
+    void insertMany(ArangoCollection col, Producer producer) {
+        producer.produce("key1", map());
+        producer.produce("key2", map());
+        producer.produce("key3", map());
+        producer.produce("key4", map());
+        producer.produce("key5", map());
+        producer.produce("flush", map());
+
+        awaitKey(col, "flush");
+        assertThat(col.documentExists("key1")).isTrue();
+        assertThat(col.documentExists("key2")).isTrue();
+        assertThat(col.documentExists("key3")).isTrue();
+        assertThat(col.documentExists("key4")).isTrue();
+        assertThat(col.documentExists("key5")).isTrue();
+    }
+
+    @KafkaTest(DeleteTarget.class)
     void delete(ArangoCollection col, Producer producer) {
         producer.produce("key", map().add("value", "foo"));
         awaitCount(col, 1);
@@ -45,6 +62,46 @@ class WriteIT {
         producer.produce("flush", map());
         awaitCount(col, 1);
         assertThat(col.documentExists("flush")).isTrue();
+    }
+
+    @KafkaTest(DeleteTarget.class)
+    void deleteWithDuplicatesKeys(ArangoCollection col, Producer producer) {
+        producer.produce("key", map().add("value", "foo"));
+        awaitCount(col, 1);
+        assertThat(col.documentExists("key")).isTrue();
+
+        // delete
+        producer.produce("key", null);
+        producer.produce("key", null);
+        producer.produce("key", null);
+        producer.produce("key", null);
+        producer.produce("key", null);
+        awaitCount(col, eq(0));
+
+        producer.produce("flush", map());
+        awaitCount(col, 1);
+        assertThat(col.documentExists("flush")).isTrue();
+    }
+
+    @KafkaTest(DeleteTarget.class)
+    void writeAndDelete(ArangoCollection col, Producer producer) {
+        producer.produce("key1", map());
+        producer.produce("key2", map());
+        producer.produce("key3", map());
+        producer.produce("key4", map());
+        producer.produce("key5", map());
+        producer.produce("key1", null);
+        producer.produce("key2", null);
+        producer.produce("key3", null);
+        producer.produce("key4", null);
+        producer.produce("flush", map());
+
+        awaitKey(col, "flush");
+        assertThat(col.documentExists("key1")).isFalse();
+        assertThat(col.documentExists("key2")).isFalse();
+        assertThat(col.documentExists("key3")).isFalse();
+        assertThat(col.documentExists("key4")).isFalse();
+        assertThat(col.documentExists("key5")).isTrue();
     }
 
 }

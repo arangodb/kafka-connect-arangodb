@@ -202,6 +202,12 @@ public class ArangoSinkConfig extends AbstractConfig {
             "Whether to wait until the documents have been synced to disk.";
     private static final String INSERT_WAIT_FOR_SYNC_DISPLAY = "WaitForSync";
 
+    public static final String BATCH_SIZE = "batch.size";
+    private static final int BATCH_SIZE_DEFAULT = 3000;
+    private static final String BATCH_SIZE_DOC = "Specifies how many records to attempt to batch together for " +
+            "insertion or deletion into the destination collection.";
+    private static final String BATCH_SIZE_DISPLAY = "Batch Size";
+
     public static final String DELETE_ENABLED = "delete.enabled";
     private static final boolean DELETE_ENABLED_DEFAULT = false;
     private static final String DELETE_ENABLED_DOC = "Whether to enable delete behavior when processing tombstones.";
@@ -495,13 +501,24 @@ public class ArangoSinkConfig extends AbstractConfig {
                     INSERT_MERGE_OBJECTS_DISPLAY
             )
             .define(
+                    BATCH_SIZE,
+                    ConfigDef.Type.INT,
+                    BATCH_SIZE_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    BATCH_SIZE_DOC,
+                    WRITES_GROUP,
+                    3,
+                    ConfigDef.Width.SHORT,
+                    BATCH_SIZE_DISPLAY
+            )
+            .define(
                     DELETE_ENABLED,
                     ConfigDef.Type.BOOLEAN,
                     DELETE_ENABLED_DEFAULT,
                     ConfigDef.Importance.MEDIUM,
                     DELETE_ENABLED_DOC,
                     WRITES_GROUP,
-                    3,
+                    4,
                     ConfigDef.Width.SHORT,
                     DELETE_ENABLED_DISPLAY
             )
@@ -512,7 +529,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     INSERT_TIMEOUT_DOC,
                     WRITES_GROUP,
-                    4,
+                    5,
                     ConfigDef.Width.SHORT,
                     INSERT_TIMEOUT_DISPLAY
             )
@@ -523,7 +540,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     INSERT_WAIT_FOR_SYNC_DOC,
                     WRITES_GROUP,
-                    5,
+                    6,
                     ConfigDef.Width.SHORT,
                     INSERT_WAIT_FOR_SYNC_DISPLAY
             )
@@ -591,19 +608,6 @@ public class ArangoSinkConfig extends AbstractConfig {
                     RETRY_BACKOFF_MS_DISPLAY
             )
             //endregion
-
-//            // Writes
-//            .define(
-//                    BATCH_SIZE,
-//                    ConfigDef.Type.INT,
-//                    BATCH_SIZE_DEFAULT,
-//                    NON_NEGATIVE_INT_VALIDATOR,
-//                    ConfigDef.Importance.MEDIUM,
-//                    BATCH_SIZE_DOC, WRITES_GROUP,
-//                    2,
-//                    ConfigDef.Width.SHORT,
-//                    BATCH_SIZE_DISPLAY
-//            )
             ;
 
 
@@ -715,16 +719,18 @@ public class ArangoSinkConfig extends AbstractConfig {
                 ))
                 .mergeObjects(getBoolean(INSERT_MERGE_OBJECTS))
                 .keepNull(true)
-                .silent(true)
                 .refillIndexCaches(false)
                 .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
     }
 
     public DocumentDeleteOptions getDeleteOptions() {
         return new DocumentDeleteOptions()
-                .silent(true)
                 .refillIndexCaches(false)
                 .waitForSync(getBoolean(INSERT_WAIT_FOR_SYNC));
+    }
+
+    public int getBatchSize() {
+        return getInt(BATCH_SIZE);
     }
 
     public boolean isDeleteEnabled() {
@@ -761,10 +767,10 @@ public class ArangoSinkConfig extends AbstractConfig {
         return getInt(CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS);
     }
 
-    public Set<HostDescription> getEndpoints() {
+    public List<HostDescription> getEndpoints() {
         return getList(CONNECTION_ENDPOINTS).stream()
                 .map(HostDescription::parse)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     public Set<Integer> getExtraDataErrorsNums() {

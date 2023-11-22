@@ -27,6 +27,6 @@ public class DlqIT {
         assertThat(headers)
                 .containsEntry("__connect.errors.exception.class.name", "org.apache.kafka.connect.errors.DataException")
                 .hasEntrySatisfying("__connect.errors.exception.message", v ->
-                        assertThat(v).contains("Response: 400, Error: 1221 - illegal document key"));
+                        assertThat(v).contains("Error: 1221 - illegal document key"));
     }
 }

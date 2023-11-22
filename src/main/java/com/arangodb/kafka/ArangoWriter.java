@@ -20,11 +20,13 @@ package com.arangodb.kafka;
 
 import com.arangodb.ArangoCollection;
 import com.arangodb.ArangoDBException;
+import com.arangodb.entity.ErrorEntity;
 import com.arangodb.kafka.config.ArangoSinkConfig;
 import com.arangodb.kafka.conversion.KeyConverter;
 import com.arangodb.kafka.conversion.RecordConverter;
 import com.arangodb.model.DocumentCreateOptions;
 import com.arangodb.model.DocumentDeleteOptions;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.DataException;
@@ -35,15 +37,15 @@ import org.apache.kafka.connect.sink.SinkTaskContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ArangoWriter {
+    private enum Type {INSERT, DELETE}
+
     private final static Logger LOG = LoggerFactory.getLogger(ArangoWriter.class);
     private final static Set<Integer> DATA_ERROR_NUMS = new HashSet<>(Arrays.asList(
-            600,    // invalid JSON object
             1208,   // illegal name (document violating smart collection key)
             1210,   // unique constraint violated
             1216,   // document too large
@@ -79,24 +81,30 @@ public class ArangoWriter {
     private final RecordConverter converter;
     private final DocumentCreateOptions createOptions;
     private final DocumentDeleteOptions deleteOptions;
+    private final int batchSize;
     private final boolean deleteEnabled;
     private final int maxRetries;
     private final int retryBackoffMs;
     private final boolean tolerateDataErrors;
     private final boolean logDataErrors;
-    private int remainingRetries;
     private final Set<Integer> extraDataErrorsNums;
+    private int remainingRetries;
+    private int currentOffset;
+    private SinkRecord errorRecord;
 
     public ArangoWriter(ArangoSinkConfig config, ArangoCollection col, SinkTaskContext context) {
         createOptions = config.getCreateOptions();
         deleteOptions = config.getDeleteOptions();
+        batchSize = config.getBatchSize();
         deleteEnabled = config.isDeleteEnabled();
-        retryBackoffMs = config.getRetryBackoffMs();
         maxRetries = config.getMaxRetries();
-        remainingRetries = maxRetries;
+        retryBackoffMs = config.getRetryBackoffMs();
         tolerateDataErrors = config.getTolerateDataErrors();
         logDataErrors = config.getLogDataErrors();
         extraDataErrorsNums = config.getExtraDataErrorsNums();
+        remainingRetries = maxRetries;
+        currentOffset = 0;
+        errorRecord = null;
 
         this.col = col;
         this.context = context;
@@ -116,81 +124,198 @@ public class ArangoWriter {
         }
 
         LOG.trace("Handling {} record(s)", records.size());
-        for (SinkRecord record : records) {
-            try {
-                handleRecord(record);
-            } catch (DataException e) {
-                handleDataException(record, e);
-            } catch (TransientException e) {
-                handleTransientException(record, e);
+        ArrayList<SinkRecord> recordsList = new ArrayList<>(records);
+        while (currentOffset < records.size()) {
+            errorRecord = null;
+            List<SinkRecord> currentBatch = extractBatch(recordsList);
+            if (currentBatch.isEmpty()) {
+                break;
             }
+
+            LOG.trace("Handling batch of {} record(s)", currentBatch.size());
+            try {
+                handleBatch(currentBatch);
+            } catch (DataException e) {
+                handleDataException(e);
+            } catch (TransientException e) {
+                handleTransientException(e);
+            }
+            remainingRetries = maxRetries;
+            currentOffset += currentBatch.size();
+        }
+        remainingRetries = maxRetries;
+        currentOffset = 0;
+    }
+
+    private List<SinkRecord> extractBatch(List<SinkRecord> records) {
+        List<SinkRecord> offsetRecords = records.subList(currentOffset, records.size());
+        if (offsetRecords.isEmpty()) {
+            return offsetRecords;
+        }
+        Type batchType = getType(offsetRecords.get(0));
+        int toIndex = IntStream.range(0, offsetRecords.size())
+                .filter(i -> !batchType.equals(getType(offsetRecords.get(i))))
+                .findFirst()
+                .orElse(offsetRecords.size());
+        return offsetRecords.subList(0, Math.min(toIndex, batchSize));
+    }
+
+    private Type getType(SinkRecord record) {
+        if (record.key() != null && record.value() == null) {
+            return Type.DELETE;
+        } else {
+            return Type.INSERT;
         }
     }
 
-    private void handleRecord(SinkRecord record) {
+    private void handleBatch(List<SinkRecord> batch) {
+        if (LOG.isTraceEnabled()) {
+            String records = batch.stream()
+                    .map(it -> String.format("%s-%s-%s", it.topic(), it.kafkaPartition(), it.kafkaOffset()))
+                    .collect(Collectors.joining("\n\t", "\n\t", "\n"));
+            LOG.trace("Handling batch of {} records: {}", batch.size(), records);
+        }
+
         try {
-            LOG.trace("Handling record: {}-{}-{}", record.topic(), record.kafkaPartition(), record.kafkaOffset());
-            if (record.key() != null && record.value() == null) {
-                handleDelete(record);
-            } else {
-                handleInsert(record);
+            switch (getType(batch.get(0))) {
+                case DELETE:
+                    handleBatchDelete(batch);
+                    break;
+                case INSERT:
+                    handleBatchInsert(batch);
+                    break;
+                default:
+                    throw new IllegalStateException();
             }
-            LOG.trace("Completed handling record");
-            remainingRetries = maxRetries;
+            LOG.trace("Completed handling batch");
         } catch (Exception e) {
             throw wrapException(e);
         }
     }
 
-    private void handleDelete(SinkRecord record) {
+    private void handleBatchDelete(List<SinkRecord> batch) {
         if (!deleteEnabled) {
             throw new ConnectException("Deletes are not enabled.");
         }
 
-        String key = keyConverter.convert(record);
-        try {
-            LOG.trace("Deleting document: {}", key);
-            col.deleteDocument(key, deleteOptions);
-        } catch (ArangoDBException e) {
-            if (e.getResponseCode() == 404 && e.getErrorNum() == 1202) {
-                // Response: 404, Error: 1202 - document not found
-                LOG.debug("Deleting document not found: {}", key);
+        List<String> keys = batch.stream()
+                .map(keyConverter::convert)
+                .collect(Collectors.toList());
+
+        LOG.trace("Deleting documents: {}", keys);
+
+        List<Object> docsAndErrs = col.deleteDocuments(keys, deleteOptions).getDocumentsAndErrors();
+        checkResultSize(batch, docsAndErrs);
+
+        List<SinkRecord> batchWithoutNotFound = new ArrayList<>();
+        List<Object> docsAndErrsWithoutNotFound = new ArrayList<>();
+
+        // remove docs not found, allow idempotent deletes
+        for (int i = 0; i < docsAndErrs.size(); i++) {
+            Object res = docsAndErrs.get(i);
+            if (res instanceof ErrorEntity) {
+                ErrorEntity e = (ErrorEntity) res;
+                if (e.getErrorNum() == 1202) {
+                    // Error: 1202 - document not found
+                    LOG.debug("Deleting document not found: {}", keys.get(i));
+                } else {
+                    batchWithoutNotFound.add(batch.get(i));
+                    docsAndErrsWithoutNotFound.add(docsAndErrs.get(i));
+                }
             } else {
-                throw e;
+                batchWithoutNotFound.add(batch.get(i));
+                docsAndErrsWithoutNotFound.add(docsAndErrs.get(i));
+            }
+        }
+
+        checkTransientErrors(batchWithoutNotFound, docsAndErrsWithoutNotFound);
+        checkDataErrors(batchWithoutNotFound, docsAndErrsWithoutNotFound);
+    }
+
+    private void handleBatchInsert(List<SinkRecord> batch) {
+        List<ObjectNode> docs = batch.stream()
+                .map(converter::convert)
+                .collect(Collectors.toList());
+
+        if (LOG.isTraceEnabled()) {
+            List<JsonNode> keys = docs.stream()
+                    .map(it -> it.get("_key"))
+                    .collect(Collectors.toList());
+            LOG.trace("Inserting documents: {}", keys);
+        }
+
+        List<Object> docsAndErrs = col.insertDocuments(docs, createOptions).getDocumentsAndErrors();
+        checkResultSize(batch, docsAndErrs);
+        checkTransientErrors(batch, docsAndErrs);
+        checkDataErrors(batch, docsAndErrs);
+    }
+
+    private void checkTransientErrors(List<SinkRecord> batch, List<Object> docsAndErrs) {
+        for (int i = 0; i < docsAndErrs.size(); i++) {
+            Object res = docsAndErrs.get(i);
+            if (res instanceof ErrorEntity) {
+                ErrorEntity e = (ErrorEntity) res;
+                if (!isDataError(e.getErrorNum())) {
+                    errorRecord = batch.get(i);
+                    throw new TransientException(new ArangoDBException(e));
+                }
             }
         }
     }
 
-    private void handleInsert(SinkRecord record) {
-        ObjectNode doc = converter.convert(record);
-        LOG.trace("Inserting document: {}", doc.get("_key"));
-        col.insertDocument(doc, createOptions);
+    private void checkDataErrors(List<SinkRecord> batch, List<Object> docsAndErrs) {
+        for (int i = 0; i < docsAndErrs.size(); i++) {
+            Object res = docsAndErrs.get(i);
+            if (res instanceof ErrorEntity) {
+                ErrorEntity e = (ErrorEntity) res;
+                if (isDataError(e.getErrorNum())) {
+                    errorRecord = batch.get(i);
+                    handleDataException(new DataException(new ArangoDBException(e)));
+                }
+            }
+        }
+    }
+
+    private void checkResultSize(List<SinkRecord> batch, List<Object> docsAndErrs) {
+        if (batch.size() != docsAndErrs.size()) {
+            throw new ConnectException("Response length [" + docsAndErrs.size() + "] " +
+                    "does not match batch length [" + batch.size() + "].");
+        }
     }
 
     private ConnectException wrapException(Exception e) {
-        if (e instanceof DataException) {
-            return (DataException) e;
+        if (e instanceof ConnectException) {
+            return (ConnectException) e;
         }
         if (e instanceof ArangoDBException) {
             Integer errNum = ((ArangoDBException) e).getErrorNum();
-            if (DATA_ERROR_NUMS.contains(errNum) || extraDataErrorsNums.contains(errNum)) {
+            if (isDataError(errNum)) {
                 return new DataException(e);
             }
         }
         return new TransientException(e);
     }
 
-    private void handleDataException(SinkRecord record, DataException e) {
+    private boolean isDataError(Integer errNum) {
+        return DATA_ERROR_NUMS.contains(errNum) || extraDataErrorsNums.contains(errNum);
+    }
+
+    private void handleDataException(DataException e) {
+        if (errorRecord == null) {
+            // data errors should only happen in batch results, for a specific document and not for the entire batch
+            throw new ConnectException("Got data exception in batch write!");
+        }
+
         if (logDataErrors) {
-            LOG.warn("Got data exception while processing record: {}", record, e);
+            LOG.warn("Got data exception while processing record: {}", errorRecord, e);
         } else {
-            LOG.debug("Got data exception while processing record: {}", record, e);
+            LOG.debug("Got data exception while processing record: {}", errorRecord, e);
         }
 
         if (tolerateDataErrors) {
             if (reporter != null) {
                 LOG.debug("Reporting exception to DLQ:", e);
-                reporter.report(record, e);
+                reporter.report(errorRecord, e);
             } else {
                 LOG.debug("Ignoring exception:", e);
             }
@@ -199,9 +324,11 @@ public class ArangoWriter {
         }
     }
 
-    private void handleTransientException(SinkRecord record, TransientException e) {
+    private void handleTransientException(TransientException e) {
         LOG.warn("Got transient exception: ", e);
-        LOG.debug("Got transient exception while processing record: {}", record, e);
+        if (errorRecord != null) {
+            LOG.debug("Got transient exception while processing record: {}", errorRecord, e);
+        }
         if (remainingRetries > 0) {
             LOG.info("remaining retries: {}", remainingRetries);
             remainingRetries--;

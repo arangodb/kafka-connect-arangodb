@@ -36,6 +36,11 @@ public final class Utils {
                 .until(() -> condition.test(col.count().getCount().intValue()));
     }
 
+    public static void awaitKey(ArangoCollection col, String key) {
+        await().atMost(Duration.ofSeconds(TESTS_TIMEOUT_SECONDS))
+                .until(() -> col.documentExists(key));
+    }
+
     public static void awaitDlq(Map<String, ?> dlq, int count) {
         await().atMost(Duration.ofSeconds(TESTS_TIMEOUT_SECONDS))
                 .until(() -> dlq.size() >= count);
