@@ -60,8 +60,8 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kafka.version>3.4.1</kafka.version>
-        <confluent.version>7.4.0</confluent.version>
+        <kafka.version>3.6.0</kafka.version>
+        <confluent.version>7.5.2</confluent.version>
         <arangodb.version>7.3.0</arangodb.version>
         <jackson.version>2.13.5</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
@@ -267,6 +267,12 @@
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
                 <version>1.14.5</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>1.22</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

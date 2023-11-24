@@ -28,13 +28,15 @@ import org.apache.kafka.connect.runtime.Connect;
 import org.apache.kafka.connect.runtime.Herder;
 import org.apache.kafka.connect.runtime.Worker;
 import org.apache.kafka.connect.runtime.isolation.Plugins;
-import org.apache.kafka.connect.runtime.rest.RestServer;
+import org.apache.kafka.connect.runtime.rest.ConnectRestServer;
+import org.apache.kafka.connect.runtime.rest.RestClient;
 import org.apache.kafka.connect.runtime.standalone.StandaloneConfig;
 import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
 import org.apache.kafka.connect.storage.MemoryOffsetBackingStore;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class StandaloneKafkaConnectDeployment extends KafkaConnectDeployment {
 
@@ -74,19 +76,20 @@ public class StandaloneKafkaConnectDeployment extends KafkaConnectDeployment {
 
         Plugins plugins = new Plugins(workerProps);
         StandaloneConfig config = new StandaloneConfig(workerProps);
+        AllConnectorClientConfigOverridePolicy allowOverride = new AllConnectorClientConfigOverridePolicy();
+        MemoryOffsetBackingStore offsetStore = new MemoryOffsetBackingStore() {
+            @Override
+            public Set<Map<String, Object>> connectorPartitions(String connectorName) {
+                throw new UnsupportedOperationException();
+            }
+        };
+        Worker worker = new Worker(workerId, time, plugins, config, offsetStore, allowOverride);
+        Herder herder = new StandaloneHerder(worker, "cluster-id", allowOverride);
+        RestClient restClient = new RestClient(config);
+        ConnectRestServer restServer = new ConnectRestServer(null, restClient, workerProps);
+        restServer.initializeServer();
 
-        AllConnectorClientConfigOverridePolicy allConnectorClientConfigOverridePolicy =
-                new AllConnectorClientConfigOverridePolicy();
-
-        Worker worker = new Worker(
-                workerId, time, plugins, config, new MemoryOffsetBackingStore(),
-                allConnectorClientConfigOverridePolicy);
-        Herder herder = new StandaloneHerder(worker, "cluster-id", allConnectorClientConfigOverridePolicy);
-
-        RestServer rest = new RestServer(config, null);
-        rest.initializeServer();
-
-        new Connect(herder, rest).start();
+        new Connect(herder, restServer).start();
     }
 
 }
