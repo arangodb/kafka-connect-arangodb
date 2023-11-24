@@ -201,8 +201,6 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-            branches:
-              ignore: /.*/
 
   test-kafka-versions:
     jobs:
@@ -211,8 +209,6 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-            branches:
-              ignore: /.*/
           matrix:
             parameters:
               kafka-version:
@@ -234,5 +230,3 @@ workflows:
           filters:
             tags:
               only: /^v.*/
-            branches:
-              ignore: /.*/
