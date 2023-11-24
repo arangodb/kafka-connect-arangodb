@@ -30,43 +30,53 @@ import org.apache.kafka.connect.connector.ConnectorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import net.jcip.annotations.GuardedBy;
+
 public class HostListMonitor {
     private static final Logger LOG = LoggerFactory.getLogger(HostListMonitor.class);
 
-    private final ArangoDB adb;
     private final ScheduledExecutorService es;
     private final ConnectorContext context;
     private final int acquireHostIntervalMs;
-    private volatile Set<HostDescription> endpoints;
+    private final int rebalanceIntervalMs;
+    private final ArangoDB adb;
+    @GuardedBy("this")
+    private List<HostDescription> endpoints;
 
     public HostListMonitor(ArangoSinkConfig sinkConfig, ConnectorContext context) {
         acquireHostIntervalMs = sinkConfig.getAcquireHostIntervalMs();
-        endpoints = new HashSet<>(sinkConfig.getEndpoints());
-        adb = sinkConfig.createMonitorClient();
+        rebalanceIntervalMs = sinkConfig.getRebalanceIntervalMs();
         this.context = context;
         es = Executors.newSingleThreadScheduledExecutor();
+        adb = sinkConfig.isAcquireHostListEnabled() ? sinkConfig.createMonitorClient() : null;
+        endpoints = sinkConfig.getEndpoints();
     }
 
     void start() {
         LOG.info("starting host list monitor background task");
-        updateHostList();
-        es.scheduleAtFixedRate(this::monitorHosts, acquireHostIntervalMs, acquireHostIntervalMs, TimeUnit.MILLISECONDS);
+        if (adb != null) {
+            updateHostList();
+            es.scheduleAtFixedRate(this::monitorHosts, acquireHostIntervalMs, acquireHostIntervalMs, TimeUnit.MILLISECONDS);
+        }
+        es.scheduleAtFixedRate(this::rebalance, rebalanceIntervalMs, rebalanceIntervalMs, TimeUnit.MILLISECONDS);
     }
 
-    public Set<HostDescription> getEndpoints() {
-        return endpoints;
+    public List<HostDescription> getEndpoints() {
+        synchronized (this) {
+            return endpoints;
+        }
     }
 
     public void stop() {
         LOG.info("stopping host list monitor background task");
-        adb.shutdown();
+        if (adb != null) {
+            adb.shutdown();
+        }
         es.shutdown();
         try {
             if (!es.awaitTermination(ArangoSinkConfig.MONITOR_REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
@@ -105,19 +115,32 @@ public class HostListMonitor {
     private boolean updateHostList() {
         LOG.debug("Fetching host list.");
         Set<HostDescription> hosts = acquireHostList();
-        if (!hosts.isEmpty() && !endpoints.equals(hosts)) {
-            LOG.info("Detected change in the acquired host list: \n\t old: {} \n\t new: {}", endpoints, hosts);
-            endpoints = hosts;
-            return true;
-        } else {
-            return false;
+        synchronized (this) {
+            if (!hosts.isEmpty() && !hosts.equals(new HashSet<>(endpoints))) {
+                LOG.info("Detected change in the acquired host list: \n\t old: {} \n\t new: {}", endpoints, hosts);
+                endpoints = new ArrayList<>(hosts);
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 
     private void monitorHosts() {
         if (updateHostList()) {
-            LOG.info("Requesting tasks reconfiguration.");
-            context.requestTaskReconfiguration();
+            reconfigureTasks();
         }
+    }
+
+    private void rebalance() {
+        synchronized (this) {
+            Collections.shuffle(endpoints);
+        }
+        reconfigureTasks();
+    }
+
+    private void reconfigureTasks() {
+        LOG.info("Requesting tasks reconfiguration.");
+        context.requestTaskReconfiguration();
     }
 }

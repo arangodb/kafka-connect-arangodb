@@ -14,6 +14,9 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.arangodb.kafka.utils.Utils.map;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,5 +93,40 @@ public class HostListMonitorTest {
         verify(adb, times(1)).shutdown();
     }
 
+    @Test
+    void acquireHostListFalse() {
+        ArangoSinkConfig cfg = new ArangoSinkConfig(config()
+                .add(ArangoSinkConfig.CONNECTION_ACQUIRE_HOST_LIST_ENABLED, "false"));
+
+        HostListMonitor monitor = new HostListMonitor(cfg, context);
+        monitor.start();
+        assertThat(monitor.getEndpoints()).containsExactly(new HostDescription("a", 1));
+        monitor.stop();
+    }
+
+    @Test
+    void rebalance() throws InterruptedException {
+        String epList = IntStream.range(0, 10)
+                .mapToObj(i -> "host:" + i)
+                .collect(Collectors.joining(","));
+        ArangoSinkConfig cfg = new ArangoSinkConfig(config()
+                .add(ArangoSinkConfig.CONNECTION_ACQUIRE_HOST_LIST_ENABLED, "false")
+                .add(ArangoSinkConfig.CONNECTION_ENDPOINTS, epList)
+                .add(ArangoSinkConfig.CONNECTION_REBALANCE_INTERVAL_MS, "200")
+        );
+
+        HostListMonitor monitor = new HostListMonitor(cfg, context);
+        monitor.start();
+        Thread.sleep(250);
+        monitor.stop();
+        verify(context, times(1)).requestTaskReconfiguration();
+
+        List<HostDescription> endpoints = IntStream.range(0, 10)
+                .mapToObj(i -> new HostDescription("host", i))
+                .collect(Collectors.toList());
+        assertThat(monitor.getEndpoints())
+                .containsExactlyInAnyOrderElementsOf(endpoints)
+                .isNotEqualTo(endpoints);
+    }
 
 }

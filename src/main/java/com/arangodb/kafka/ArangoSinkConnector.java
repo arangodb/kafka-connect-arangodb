@@ -34,8 +34,6 @@ import java.util.stream.Collectors;
 public class ArangoSinkConnector extends SinkConnector {
     private static final Logger LOG = LoggerFactory.getLogger(SinkConnector.class);
     private Map<String, String> config;
-    private boolean acquireHostList;
-    private List<HostDescription> initialEndpoints;
     private HostListMonitor hostListMonitor;
 
     @Override
@@ -56,13 +54,8 @@ public class ArangoSinkConnector extends SinkConnector {
             throw new ConnectException(e);
         }
 
-        acquireHostList = sinkConfig.isAcquireHostListEnabled();
-        initialEndpoints = sinkConfig.getEndpoints();
-
-        if (acquireHostList) {
-            hostListMonitor = new HostListMonitor(sinkConfig, context);
-            hostListMonitor.start();
-        }
+        hostListMonitor = new HostListMonitor(sinkConfig, context);
+        hostListMonitor.start();
     }
 
     @Override
@@ -72,7 +65,7 @@ public class ArangoSinkConnector extends SinkConnector {
 
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
-        List<HostDescription> endpoints = new ArrayList<>(acquireHostList ? hostListMonitor.getEndpoints() : initialEndpoints);
+        List<HostDescription> endpoints = hostListMonitor.getEndpoints();
         int rotationDistance = endpoints.size() / maxTasks;
         if (rotationDistance == 0) {
             rotationDistance = 1;
@@ -94,10 +87,8 @@ public class ArangoSinkConnector extends SinkConnector {
 
     @Override
     public void stop() {
-        if (acquireHostList) {
-            LOG.info("stopping ArangoSinkConnector");
-            hostListMonitor.stop();
-        }
+        LOG.info("stopping ArangoSinkConnector");
+        hostListMonitor.stop();
     }
 
     @Override
