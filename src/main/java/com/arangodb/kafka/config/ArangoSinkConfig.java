@@ -105,6 +105,12 @@ public class ArangoSinkConfig extends AbstractConfig {
     private static final String CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DOC = "Interval for acquiring the host list.";
     private static final String CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DISPLAY = "Acquire Host List Interval";
 
+    public static final String CONNECTION_REBALANCE_INTERVAL_MS = CONNECTION_PREFIX + "rebalance.interval.ms";
+    private static final int CONNECTION_REBALANCE_INTERVAL_MS_DEFAULT = 30 * 60 * 1_000; // 30 min
+    private static final String CONNECTION_REBALANCE_INTERVAL_MS_DOC = "Interval for re-balancing the connections " +
+            "across the endpoints.";
+    private static final String CONNECTION_REBALANCE_INTERVAL_MS_DISPLAY = "Connections re-balancing interval";
+
     public static final String CONNECTION_PROTOCOL = CONNECTION_PREFIX + "protocol";
     private static final String CONNECTION_PROTOCOL_DEFAULT = Protocol.HTTP2.toString();
     private static final String CONNECTION_PROTOCOL_DOC = "Communication protocol.";
@@ -335,6 +341,17 @@ public class ArangoSinkConfig extends AbstractConfig {
                     CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS_DISPLAY
             )
             .define(
+                    CONNECTION_REBALANCE_INTERVAL_MS,
+                    ConfigDef.Type.INT,
+                    CONNECTION_REBALANCE_INTERVAL_MS_DEFAULT,
+                    ConfigDef.Importance.LOW,
+                    CONNECTION_REBALANCE_INTERVAL_MS_DOC,
+                    CONNECTION_GROUP,
+                    8,
+                    ConfigDef.Width.SHORT,
+                    CONNECTION_REBALANCE_INTERVAL_MS_DISPLAY
+            )
+            .define(
                     CONNECTION_PROTOCOL,
                     ConfigDef.Type.STRING,
                     CONNECTION_PROTOCOL_DEFAULT,
@@ -342,7 +359,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.MEDIUM,
                     CONNECTION_PROTOCOL_DOC,
                     CONNECTION_GROUP,
-                    8,
+                    9,
                     ConfigDef.Width.SHORT,
                     CONNECTION_PROTOCOL_DISPLAY,
                     new EnumRecommender(Protocol.class)
@@ -355,7 +372,7 @@ public class ArangoSinkConfig extends AbstractConfig {
                     ConfigDef.Importance.LOW,
                     CONNECTION_CONTENT_TYPE_DOC,
                     CONNECTION_GROUP,
-                    9,
+                    10,
                     ConfigDef.Width.SHORT,
                     CONNECTION_CONTENT_TYPE_DISPLAY,
                     new EnumRecommender(ContentType.class)
@@ -765,6 +782,10 @@ public class ArangoSinkConfig extends AbstractConfig {
 
     public int getAcquireHostIntervalMs() {
         return getInt(CONNECTION_ACQUIRE_HOST_LIST_INTERVAL_MS);
+    }
+
+    public int getRebalanceIntervalMs() {
+        return getInt(CONNECTION_REBALANCE_INTERVAL_MS);
     }
 
     public List<HostDescription> getEndpoints() {
