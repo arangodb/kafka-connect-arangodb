@@ -5,10 +5,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
-- batch writes (DE-627, #23)
+## [1.1.0] - 2023-11-24
 
-## [1.0.0] - 2023-05-26
+- added periodical connections rebalancing (#27)
+- added Kafka 3.6 support (#25)
+- added batch writes support (DE-627, #23)
+- updated ArangoDB Java Driver to version `7.3`
+
+## [1.0.0] - 2023-08-18
 
 - initial release
 
-[unreleased]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.0.0...v1.1.0
