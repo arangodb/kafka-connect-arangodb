@@ -62,7 +62,7 @@ class RetryIT {
 
         assertThat(logs.getLogs().stream().filter(it -> Level.WARN.equals(it.getLevel()))).anySatisfy(it -> {
             assertThat(it.getMessage()).contains("transient exception");
-            assertThat(it.getThrowableProxy().getMessage()).contains("Connection refused");
+            assertThat(it.getThrowableProxy().getMessage()).contains("Cannot contact any host!");
         });
 
         for (ProxiedEndpoint e : endpoints) {
