@@ -8,7 +8,10 @@ orbs:
 workflows:
   setup:
     jobs:
-      - setup
+      - setup:
+        filters:
+          tags:
+            only: /^v.*/
 
 jobs:
   setup:
