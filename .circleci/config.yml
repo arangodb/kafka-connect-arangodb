@@ -11,7 +11,8 @@ workflows:
       - setup:
         filters:
           tags:
-            only: /^v.*/
+            only:
+              - /.*
 
 jobs:
   setup:
