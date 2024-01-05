@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
+## [1.2.0] - 2024-01-05
+
+- fixed support for `VST` communication protocol (DE-734, #31)
+- fixed support for `VPACK` content type (DE-734, #31)
+- updated ArangoDB Java Driver to version `7.4` (DE-734, #31)
+- use the shaded variant of ArangoDB Java Driver (DE-734, #31)
+
 ## [1.1.0] - 2023-11-24
 
 - added periodical connections rebalancing (#27)
@@ -16,5 +23,6 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 - initial release
 
-[unreleased]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/arangodb/kafka-connect-arangodb/compare/v1.0.0...v1.1.0
