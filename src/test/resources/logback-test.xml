@@ -13,6 +13,7 @@
 
     <logger name="org.reflections.Reflections" level="ERROR"/>
     <logger name="org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader" level="WARN"/>
-    <logger name="com.arangodb.kafka" level="TRACE"/>
+<!--    <logger name="com.arangodb.kafka" level="TRACE"/>-->
+<!--    <logger name="com.arangodb.internal.net.Communication" level="DEBUG" />-->
 
 </configuration>

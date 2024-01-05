@@ -36,12 +36,12 @@ public class ClusterKafkaConnectDeployment extends KafkaConnectDeployment {
     public ClusterKafkaConnectDeployment() {
         kafkaBootstrapServers = KafkaDeployment.getKafkaBootstrapServers();
         LOG.info("Using kafka.bootstrap.servers: {}", kafkaBootstrapServers);
-        Objects.requireNonNull(kafkaBootstrapServers);
+        Objects.requireNonNull(kafkaBootstrapServers, "Required system property: kafka.bootstrap.servers");
         assert !kafkaBootstrapServers.isEmpty();
 
         kafkaConnectHost = getKafkaConnectHost();
         LOG.info("Using kafka.connect.host: {}", kafkaConnectHost);
-        Objects.requireNonNull(kafkaConnectHost);
+        Objects.requireNonNull(kafkaConnectHost, "Required system property: kafka.connect.host");
         assert !kafkaConnectHost.isEmpty();
     }
 

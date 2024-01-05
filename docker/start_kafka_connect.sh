@@ -10,9 +10,12 @@ docker pull $DOCKER_IMAGE
 KAFKA_BOOTSTRAP_SERVERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
 LOCATION=$(pwd)/$(dirname "$0")
 
+mkdir -p "$LOCATION"/../target/jars
+cp "$LOCATION"/../target/*.jar "$LOCATION"/../target/jars
+
 # data volume 1
 docker create -v /tmp --name kafka-connect-data-1 alpine:3 /bin/true
-docker cp "$LOCATION"/../target kafka-connect-data-1:/tmp/kafka-connect-arangodb
+docker cp "$LOCATION/../target/jars" kafka-connect-data-1:/tmp/kafka-connect-arangodb
 docker cp "$LOCATION"/../src/test/resources/test.truststore kafka-connect-data-1:/tmp
 docker cp "$LOCATION"/connect/connect-distributed-1.properties kafka-connect-data-1:/tmp
 
@@ -27,7 +30,7 @@ docker run -d \
 
 # data volume 2
 docker create -v /tmp --name kafka-connect-data-2 alpine:3 /bin/true
-docker cp "$LOCATION"/../target kafka-connect-data-2:/tmp/kafka-connect-arangodb
+docker cp "$LOCATION/../target/jars" kafka-connect-data-2:/tmp/kafka-connect-arangodb
 docker cp "$LOCATION"/../src/test/resources/test.truststore kafka-connect-data-2:/tmp
 docker cp "$LOCATION"/connect/connect-distributed-2.properties kafka-connect-data-2:/tmp
 
