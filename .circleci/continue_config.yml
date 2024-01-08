@@ -201,6 +201,8 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+            branches:
+              ignore: /.*/
 
   test-kafka-versions:
     jobs:
@@ -209,6 +211,8 @@ workflows:
           filters:
             tags:
               only: /^v.*/
+            branches:
+              ignore: /.*/
           matrix:
             parameters:
               kafka-version:
@@ -227,6 +231,3 @@ workflows:
     jobs:
       - test-resilience:
           name: test-resilience
-          filters:
-            tags:
-              only: /^v.*/
