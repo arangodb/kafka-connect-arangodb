@@ -1,5 +1,20 @@
 version: 2.1
 
+commands:
+  timeout:
+    parameters:
+      duration:
+        default: '5m'
+        type: 'string'
+    steps:
+      - run:
+          name: Cancel job after << parameters.duration >>
+          background: true
+          command: |
+            sleep << parameters.duration >>
+            echo "Cancelling job as << parameters.duration >> has elapsed"
+            curl -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" "https://circleci.com/api/v2/project/github/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/job/${CIRCLE_BUILD_NUM}/cancel"
+
 executors:
   j8:
     docker:
@@ -31,6 +46,7 @@ jobs:
       ARANGO_ENDPOINTS: <<parameters.arango-endpoints>>
     executor: <<parameters.jdk>>
     steps:
+      - timeout
       - checkout
       - setup_remote_docker
       - run:
@@ -70,6 +86,7 @@ jobs:
       KAFKA_VERSION: <<parameters.kafka-version>>
     executor: <<parameters.jdk>>
     steps:
+      - timeout
       - checkout
       - run:
           name: Package
@@ -109,6 +126,7 @@ jobs:
       KC: 'true'
     executor: <<parameters.jdk>>
     steps:
+      - timeout
       - checkout
       - run:
           name: Package
@@ -147,6 +165,7 @@ jobs:
       TOXIPROXY_VERSION: v2.7.0
     executor: <<parameters.jdk>>
     steps:
+      - timeout
       - checkout
       - setup_remote_docker
       - run:
