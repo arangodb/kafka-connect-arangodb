@@ -47,13 +47,11 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
         Stream<Class<? extends TestTarget>> targets = value.length > 0 ? Arrays.stream(value) :
                 Arrays.stream(targetGroup.getEnumConstants()).map(TargetHolder::getClazz);
         return targets
-                .map(it -> new TestTemplateInvocationContext() {
-
-                    private final TestTarget target = instantiate(it, testNamePrefix);
-
+                .map(it -> instantiate(it, testNamePrefix))
+                .map(target -> new TestTemplateInvocationContext() {
                     @Override
                     public String getDisplayName(int invocationIndex) {
-                        return it.getSimpleName();
+                        return target.getClass().getSimpleName();
                     }
 
                     @Override
@@ -67,6 +65,7 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                                     assumeTrue(target.isEnabled());
                                     target.init();
                                     connectClient.createConnector(target.getConfig());
+                                    assumeTrue(target.isDbVersionSupported());
                                     assertThat(target.getCollection().count().getCount()).isEqualTo(0L);
                                     assertThat(target.getDlqRecords().size()).isEqualTo(0L);
                                 },
