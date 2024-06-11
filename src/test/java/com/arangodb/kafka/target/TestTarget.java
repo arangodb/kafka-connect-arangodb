@@ -90,6 +90,14 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         return initialized;
     }
 
+    public final boolean isDbVersionSupported() {
+        return supportsVersion(collection.db().arango().getVersion().getVersion());
+    }
+
+    protected boolean supportsVersion(String version) {
+        return true;
+    }
+
     private void consumeDlq() {
         ConsumerRecords<String, String> consumerRecords = dlqConsumer.poll(Duration.ofMillis(100));
         for (ConsumerRecord<String, String> record : consumerRecords) {
@@ -196,6 +204,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     private ArangoCollection createCollection() {
         Map<String, String> cfg = getConfig();
         cfg.put(ArangoSinkConfig.CONNECTION_ENDPOINTS, ArangoDbDeployment.getInstance().getAdminEndpoints());
+        cfg.put(ArangoSinkConfig.CONNECTION_PROTOCOL, ArangoSinkConfig.Protocol.HTTP11.toString());
         ArangoSinkConfig sinkConfig = new ArangoSinkConfig(cfg);
         ArangoCollection col = sinkConfig.createCollection();
         if (col.exists()) {

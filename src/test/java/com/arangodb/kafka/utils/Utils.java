@@ -69,4 +69,43 @@ public final class Utils {
             return this;
         }
     }
+
+    /**
+     * Parses {@param version} and checks whether it is greater or equal to <{@param otherMajor}, {@param otherMinor},
+     * {@param otherPatch}> comparing the corresponding version components in lexicographical order.
+     */
+    public static boolean isAtLeastVersion(final String version, final int otherMajor, final int otherMinor,
+                                           final int otherPatch) {
+        return compareVersion(version, otherMajor, otherMinor, otherPatch) >= 0;
+    }
+
+    /**
+     * Parses {@param version} and checks whether it is less than <{@param otherMajor}, {@param otherMinor},
+     * {@param otherPatch}> comparing the corresponding version components in lexicographical order.
+     */
+    public static boolean isLessThanVersion(final String version, final int otherMajor, final int otherMinor,
+                                            final int otherPatch) {
+        return compareVersion(version, otherMajor, otherMinor, otherPatch) < 0;
+    }
+
+    private static int compareVersion(final String version, final int otherMajor, final int otherMinor,
+                                      final int otherPatch) {
+        String[] parts = version.split("-")[0].split("\\.");
+
+        int major = Integer.parseInt(parts[0]);
+        int minor = Integer.parseInt(parts[1]);
+        int patch = Integer.parseInt(parts[2]);
+
+        int majorComparison = Integer.compare(major, otherMajor);
+        if (majorComparison != 0) {
+            return majorComparison;
+        }
+
+        int minorComparison = Integer.compare(minor, otherMinor);
+        if (minorComparison != 0) {
+            return minorComparison;
+        }
+
+        return Integer.compare(patch, otherPatch);
+    }
 }

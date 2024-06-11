@@ -23,6 +23,8 @@ import com.arangodb.kafka.target.converter.JsonTarget;
 
 import java.util.Map;
 
+import static com.arangodb.kafka.utils.Utils.isLessThanVersion;
+
 public class VstTarget extends JsonTarget {
 
     public VstTarget(String name) {
@@ -37,4 +39,8 @@ public class VstTarget extends JsonTarget {
         return cfg;
     }
 
+    @Override
+    protected boolean supportsVersion(String version) {
+        return isLessThanVersion(version, 3, 12, 0);
+    }
 }
