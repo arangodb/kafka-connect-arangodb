@@ -64,16 +64,14 @@ public class TargetProvider implements TestTemplateInvocationContextProvider {
                                 (BeforeTestExecutionCallback) extensionContext -> {
                                     assumeTrue(target.isEnabled());
                                     target.init();
-                                    connectClient.createConnector(target.getConfig());
                                     assumeTrue(target.isDbVersionSupported());
+                                    connectClient.createConnector(target.getConfig());
                                     assertThat(target.getCollection().count().getCount()).isEqualTo(0L);
                                     assertThat(target.getDlqRecords().size()).isEqualTo(0L);
                                 },
                                 (AfterTestExecutionCallback) extensionContext -> {
-                                    if (target.isInitialized()) {
-                                        connectClient.deleteConnector(target.getName());
-                                        target.close();
-                                    }
+                                    connectClient.deleteConnector(target.getName());
+                                    target.close();
                                 }
                         );
                     }

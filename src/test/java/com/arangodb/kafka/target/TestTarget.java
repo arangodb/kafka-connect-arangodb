@@ -55,7 +55,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     private AdminClient adminClient;
     private final Map<String, ConsumerRecord<String, String>> dlqRecords;
     private ScheduledExecutorService dlqExecutor;
-    private boolean initialized = false;
+    private volatile boolean initialized = false;
 
     public TestTarget(String name) {
         this.name = name;
@@ -84,10 +84,6 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
             dlqExecutor.scheduleAtFixedRate(this::consumeDlq, 50, 100, TimeUnit.MILLISECONDS);
         }
         initialized = true;
-    }
-
-    public boolean isInitialized() {
-        return initialized;
     }
 
     public final boolean isDbVersionSupported() {
@@ -184,6 +180,10 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
 
     @Override
     public void close() {
+        if (!initialized) {
+            return;
+        }
+
         producer.close();
         if (supportsDLQ()) {
             dlqExecutor.execute(() -> dlqConsumer.close());

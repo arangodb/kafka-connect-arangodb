@@ -21,6 +21,7 @@ package deployment;
 import org.sourcelab.kafka.connect.apiclient.Configuration;
 import org.sourcelab.kafka.connect.apiclient.KafkaConnectClient;
 import org.sourcelab.kafka.connect.apiclient.request.dto.NewConnectorDefinition;
+import org.sourcelab.kafka.connect.apiclient.rest.exceptions.ResourceNotFoundException;
 
 import java.util.Collection;
 import java.util.Map;
@@ -56,6 +57,10 @@ public class KafkaConnectTemplate implements KafkaConnectOperations {
 
     @Override
     public void deleteConnector(String name) {
-        client.deleteConnector(name);
+        try {
+            client.deleteConnector(name);
+        } catch (ResourceNotFoundException e) {
+            // ignore
+        }
     }
 }
