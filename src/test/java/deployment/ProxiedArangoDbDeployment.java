@@ -37,7 +37,21 @@ enum ProxiedArangoDbDeployment implements ArangoDbDeployment {
 
     ProxiedArangoDbDeployment() {
         Logger LOG = LoggerFactory.getLogger(ProxiedArangoDbDeployment.class);
-        endpoints = System.getProperty("arango.endpoints", "172.28.0.1:8529");
+
+        String topology = System.getProperty("arango.topology", "single");
+        String defaultEndpoints;
+        switch (topology) {
+            case "single":
+                defaultEndpoints = "172.28.0.1:8529";
+                break;
+            case "cluster":
+                defaultEndpoints = "172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549";
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid arango.topology: " + topology);
+        }
+
+        endpoints = System.getProperty("arango.endpoints", defaultEndpoints);
         LOG.info("Using arango.endpoints: {}", endpoints);
         assert !endpoints.isEmpty();
 
