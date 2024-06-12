@@ -69,6 +69,6 @@ public class AvroTarget extends TestTarget {
     @Override
     public boolean isEnabled() {
         // run only in standalone mode
-        return System.getProperty("distributed") == null;
+        return !Boolean.parseBoolean(System.getProperty("distributed"));
     }
 }

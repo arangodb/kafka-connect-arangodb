@@ -548,7 +548,8 @@
             <id>standalone</id>
             <activation>
                 <property>
-                    <name>!distributed</name>
+                    <name>distributed</name>
+                    <value>!true</value>
                 </property>
             </activation>
             <properties>
@@ -561,6 +562,7 @@
             <activation>
                 <property>
                     <name>distributed</name>
+                    <value>true</value>
                 </property>
             </activation>
             <properties>
@@ -573,6 +575,7 @@
             <activation>
                 <property>
                     <name>resilienceTests</name>
+                    <value>true</value>
                 </property>
             </activation>
         </profile>
