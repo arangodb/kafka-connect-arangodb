@@ -206,6 +206,7 @@ workflows:
                 - j8
                 - j11
                 - j17
+                - j21
 
   test-distributed-arangodb-versions:
     jobs:
@@ -223,17 +224,11 @@ workflows:
     jobs:
       - test-ssl:
           name: test-ssl
-          filters:
-            tags:
-              only: /^v.*/
 
   test-kafka-versions:
     jobs:
       - test-distributed:
           name: test-distributed-<<matrix.kafka-version>>
-          filters:
-            tags:
-              only: /^v.*/
           matrix:
             parameters:
               kafka-version:
@@ -252,6 +247,3 @@ workflows:
     jobs:
       - test-resilience:
           name: test-resilience
-          filters:
-            tags:
-              only: /^v.*/
