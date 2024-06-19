@@ -23,9 +23,22 @@ commands:
     steps:
       - run:
           name: Create reports
-          command: mvn -e --no-transfer-progress surefire-report:failsafe-report-only surefire-report:report-only
+          command: mvn -e surefire-report:failsafe-report-only surefire-report:report-only
       - store_artifacts:
           path: target/site
+  load_cache:
+    steps:
+      - run:
+          name: Generate Cache Checksum
+          command: find . -name 'pom.xml' | sort | xargs cat > /tmp/maven_cache_seed
+      - restore_cache:
+          key: maven-{{ echo $CIRCLE_JOB }}-{{ checksum "/tmp/maven_cache_seed" }}
+  store_cache:
+    steps:
+      - save_cache:
+          key: maven-{{ echo $CIRCLE_JOB }}-{{ checksum "/tmp/maven_cache_seed" }}
+          paths:
+            - ~/.m2/repository
 
 executors:
   j8:
@@ -54,13 +67,15 @@ jobs:
       - timeout
       - checkout
       - setup_remote_docker
+      - load_cache
       - run:
           name: Create Kafka Environment
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test
+          command: mvn -e integration-test
       - report
+      - store_cache
 
   test-distributed:
     parameters:
@@ -85,17 +100,19 @@ jobs:
     steps:
       - timeout
       - checkout
+      - setup_remote_docker
+      - load_cache
       - run:
           name: Package
           command: mvn package -Ddistributed
-      - setup_remote_docker
       - run:
           name: Create Kafka Environment
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Ddistributed -Darango.topology=$STARTER_MODE
+          command: mvn -e integration-test -Ddistributed -Darango.topology=$STARTER_MODE
       - report
+      - store_cache
 
   test-ssl:
     parameters:
@@ -110,17 +127,19 @@ jobs:
     steps:
       - timeout
       - checkout
+      - setup_remote_docker
+      - load_cache
       - run:
           name: Package
           command: mvn package -Ddistributed
-      - setup_remote_docker
       - run:
           name: Create Kafka Environment
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
+          command: mvn -e integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
       - report
+      - store_cache
 
   test-resilience:
     parameters:
@@ -136,6 +155,7 @@ jobs:
       - timeout
       - checkout
       - setup_remote_docker
+      - load_cache
       - run:
           name: Create Kafka Environment
           command: ./docker/startup.sh
@@ -145,8 +165,9 @@ jobs:
           background: true
       - run:
           name: Integration Tests
-          command: mvn -e --no-transfer-progress integration-test -DresilienceTests -Darango.topology=$STARTER_MODE -Dit.test=com.arangodb.kafka.resilience.**
+          command: mvn -e integration-test -DresilienceTests -Darango.topology=$STARTER_MODE -Dit.test=com.arangodb.kafka.resilience.**
       - report
+      - store_cache
 
 workflows:
 
