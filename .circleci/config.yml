@@ -169,6 +169,21 @@ jobs:
       - report
       - store_cache
 
+  deploy:
+    executor: 'j8'
+    steps:
+      - timeout
+      - checkout
+      - load_cache
+      - mvn-info
+      - run:
+          name: Add GPG key
+          command: echo $GPG_PRIVATE_KEY | base64 --decode | gpg --batch --no-tty --import --yes
+      - run:
+          name: Deploy to Apache Maven Central
+          command: mvn -s .circleci/maven-release-settings.xml -DskipTests deploy
+      - store_cache
+
 workflows:
 
   test-standalone:
@@ -243,3 +258,13 @@ workflows:
     jobs:
       - test-resilience:
           name: test-resilience
+
+  deploy:
+    jobs:
+      - deploy:
+          context: java-release
+          filters:
+            tags:
+              only: /^deploy.*/
+            branches:
+              ignore: /.*/
