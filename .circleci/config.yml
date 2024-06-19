@@ -175,7 +175,6 @@ jobs:
       - timeout
       - checkout
       - load_cache
-      - mvn-info
       - run:
           name: Add GPG key
           command: echo $GPG_PRIVATE_KEY | base64 --decode | gpg --batch --no-tty --import --yes
