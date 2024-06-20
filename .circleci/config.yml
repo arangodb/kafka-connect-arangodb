@@ -1,26 +1,269 @@
 version: 2.1
 
-setup: true
+parameters:
+  docker-img:
+    type: 'string'
+    default: ""
 
-orbs:
-  continuation: circleci/continuation@1.0.0
+commands:
+  timeout:
+    parameters:
+      duration:
+        default: '5m'
+        type: 'string'
+    steps:
+      - run:
+          name: Cancel job after <<parameters.duration>>
+          background: true
+          command: |
+            sleep <<parameters.duration>>
+            echo "Cancelling job as <<parameters.duration>> has elapsed"
+            curl --fail -X POST -H "Circle-Token: ${CIRCLE_TOKEN}" "https://circleci.com/api/v1.1/project/github/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BUILD_NUM}/cancel"
+  report:
+    steps:
+      - run:
+          name: Create reports
+          command: mvn -e surefire-report:failsafe-report-only surefire-report:report-only
+      - store_artifacts:
+          path: target/site
+  load_cache:
+    steps:
+      - run:
+          name: Generate Cache Checksum
+          command: find . -name 'pom.xml' | sort | xargs cat > /tmp/maven_cache_seed
+      - restore_cache:
+          key: maven-{{ .Environment.CIRCLE_JOB }}-{{ checksum "/tmp/maven_cache_seed" }}
+  store_cache:
+    steps:
+      - save_cache:
+          key: maven-{{ .Environment.CIRCLE_JOB }}-{{ checksum "/tmp/maven_cache_seed" }}
+          paths:
+            - ~/.m2/repository
 
-workflows:
-  setup:
-    jobs:
-      - setup
+executors:
+  j8:
+    docker:
+      - image: 'cimg/openjdk:8.0'
+  j11:
+    docker:
+      - image: 'cimg/openjdk:11.0'
+  j17:
+    docker:
+      - image: 'cimg/openjdk:17.0'
+  j21:
+    docker:
+      - image: 'cimg/openjdk:21.0'
 
 jobs:
-  setup:
-    machine:
-      image: ubuntu-2004:2023.07.1
-    resource_class: small
+  test-standalone:
+    parameters:
+      docker-img:
+        type: 'string'
+        default: <<pipeline.parameters.docker-img>>
+    environment:
+      DOCKER_IMAGE: <<parameters.docker-img>>
+    executor: 'j21'
     steps:
+      - timeout
       - checkout
+      - setup_remote_docker
+      - load_cache
       - run:
-          name: Generate Pipeline continue_config.yml file
-          command: |
-            ./ci/generate_circleci_config.sh
-      - continuation/continue:
-          configuration_path: .circleci/continue_config.yml
-          parameters: '{}'
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Integration Tests
+          command: mvn -e integration-test
+      - report
+      - store_cache
+
+  test-distributed:
+    parameters:
+      jdk:
+        type: 'string'
+        default: 'j21'
+      docker-img:
+        type: 'string'
+        default: <<pipeline.parameters.docker-img>>
+      topology:
+        type: 'string'
+        default: 'single'
+      kafka-version:
+        type: 'string'
+        default: '3.6'
+    environment:
+      STARTER_MODE: <<parameters.topology>>
+      DOCKER_IMAGE: <<parameters.docker-img>>
+      KC: 'true'
+      KAFKA_VERSION: <<parameters.kafka-version>>
+    executor: <<parameters.jdk>>
+    steps:
+      - timeout
+      - checkout
+      - setup_remote_docker
+      - load_cache
+      - run:
+          name: Package
+          command: mvn package -Ddistributed
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Integration Tests
+          command: mvn -e integration-test -Ddistributed -Darango.topology=$STARTER_MODE
+      - report
+      - store_cache
+
+  test-ssl:
+    parameters:
+      docker-img:
+        type: 'string'
+        default: <<pipeline.parameters.docker-img>>
+    environment:
+      DOCKER_IMAGE: <<parameters.docker-img>>
+      SSL: 'true'
+      KC: 'true'
+    executor: 'j21'
+    steps:
+      - timeout
+      - checkout
+      - setup_remote_docker
+      - load_cache
+      - run:
+          name: Package
+          command: mvn package -Ddistributed
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Integration Tests
+          command: mvn -e integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
+      - report
+      - store_cache
+
+  test-resilience:
+    parameters:
+      docker-img:
+        type: 'string'
+        default: <<pipeline.parameters.docker-img>>
+    environment:
+      STARTER_MODE: 'cluster'
+      DOCKER_IMAGE: <<parameters.docker-img>>
+      TOXIPROXY_VERSION: 'v2.7.0'
+    executor: 'j21'
+    steps:
+      - timeout
+      - checkout
+      - setup_remote_docker
+      - load_cache
+      - run:
+          name: Create Kafka Environment
+          command: ./docker/startup.sh
+      - run:
+          name: Start Toxiproxy
+          command: ./bin/startProxy.sh
+          background: true
+      - run:
+          name: Integration Tests
+          command: mvn -e integration-test -DresilienceTests -Darango.topology=$STARTER_MODE -Dit.test=com.arangodb.kafka.resilience.**
+      - report
+      - store_cache
+
+  deploy:
+    executor: 'j8'
+    steps:
+      - timeout
+      - checkout
+      - load_cache
+      - run:
+          name: Add GPG key
+          command: echo $GPG_PRIVATE_KEY | base64 --decode | gpg --batch --no-tty --import --yes
+      - run:
+          name: Deploy to Apache Maven Central
+          command: mvn -s .circleci/maven-release-settings.xml -DskipTests deploy
+      - store_cache
+
+workflows:
+
+  test-standalone:
+    jobs:
+      - test-standalone:
+          name: test-standalone
+
+  test-distributed-jdk-versions:
+    jobs:
+      - test-distributed:
+          name: test-distributed-<<matrix.jdk>>
+          matrix:
+            parameters:
+              jdk:
+                - 'j8'
+                - 'j11'
+                - 'j17'
+                - 'j21'
+
+  test-distributed-adb-versions:
+    when:
+      not: <<pipeline.parameters.docker-img>>
+    jobs:
+      - test-distributed:
+          name: test-distributed-<<matrix.topology>>-<<matrix.docker-img>>
+          matrix:
+            parameters:
+              docker-img:
+                - 'docker.io/arangodb/arangodb:3.11'
+                - 'docker.io/arangodb/arangodb:3.12'
+              topology:
+                - 'single'
+                - 'cluster'
+
+  test-distributed-adb-topologies:
+    when: <<pipeline.parameters.docker-img>>
+    jobs:
+      - test-distributed:
+          name: test-distributed-<<matrix.topology>>
+          matrix:
+            parameters:
+              topology:
+                - 'single'
+                - 'cluster'
+
+  test-distributed-kafka-versions:
+    jobs:
+      - test-distributed:
+          name: test-distributed-<<matrix.kafka-version>>
+          matrix:
+            parameters:
+              jdk:
+                - 'j11'
+              kafka-version:
+                - '3.6'
+                - '3.5'
+                - '3.4'
+                - '3.3'
+                - '3.2'
+                - '3.1'
+                - '3.0'
+                - '2.8'
+                - '2.7.0'
+                - '2.6.0'
+
+  test-ssl:
+    jobs:
+      - test-ssl:
+          name: test-ssl
+
+  test-resilience:
+    jobs:
+      - test-resilience:
+          name: test-resilience
+
+  deploy:
+    jobs:
+      - deploy:
+          context: java-release
+          filters:
+            tags:
+              only: /^deploy.*/
+            branches:
+              ignore: /.*/
