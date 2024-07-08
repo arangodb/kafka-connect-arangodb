@@ -197,7 +197,8 @@ jobs:
   release:
     executor: 'j8'
     steps:
-      - timeout
+      - timeout:
+          duration: '15m'
       - checkout
       - load_cache
       - config_gpg
