@@ -8,6 +8,6 @@ public class ArangoSinkConnectorTest {
     @Test
     void version(){
         String version = new ArangoSinkConnector().version();
-        assertThat(version).isEqualTo("1.3.0-SNAPSHOT");
+        assertThat(version).isEqualTo("1.3.0");
     }
 }
