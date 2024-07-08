@@ -23,7 +23,7 @@ commands:
     steps:
       - run:
           name: Create reports
-          command: mvn -e surefire-report:failsafe-report-only surefire-report:report-only
+          command: mvn surefire-report:failsafe-report-only surefire-report:report-only
       - store_artifacts:
           path: target/site
   load_cache:
@@ -88,7 +88,7 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e integration-test
+          command: mvn integration-test
       - report
       - store_cache
 
@@ -105,7 +105,7 @@ jobs:
         default: 'single'
       kafka-version:
         type: 'string'
-        default: '3.6'
+        default: '3.7'
     environment:
       STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: <<parameters.docker-img>>
@@ -125,7 +125,7 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e integration-test -Ddistributed -Darango.topology=$STARTER_MODE
+          command: mvn integration-test -Ddistributed -Darango.topology=$STARTER_MODE
       - report
       - store_cache
 
@@ -152,7 +152,7 @@ jobs:
           command: ./docker/startup.sh
       - run:
           name: Integration Tests
-          command: mvn -e integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
+          command: mvn integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
       - report
       - store_cache
 
@@ -180,7 +180,7 @@ jobs:
           background: true
       - run:
           name: Integration Tests
-          command: mvn -e integration-test -DresilienceTests -Darango.topology=$STARTER_MODE -Dit.test=com.arangodb.kafka.resilience.**
+          command: mvn integration-test -DresilienceTests -Darango.topology=$STARTER_MODE -Dit.test=com.arangodb.kafka.resilience.**
       - report
       - store_cache
 
@@ -259,6 +259,7 @@ workflows:
               jdk:
                 - 'j11'
               kafka-version:
+                - '3.7'
                 - '3.6'
                 - '3.5'
                 - '3.4'
