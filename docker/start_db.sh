@@ -18,6 +18,14 @@ EXTENDED_NAMES=${EXTENDED_NAMES:=false}
 STARTER_DOCKER_IMAGE=docker.io/arangodb/arangodb-starter:latest
 GW=172.28.0.1
 
+echo "---"
+echo "starting ArangoDB with:"
+echo "DOCKER_IMAGE=$DOCKER_IMAGE"
+echo "STARTER_DOCKER_IMAGE=$STARTER_DOCKER_IMAGE"
+echo "STARTER_MODE=$STARTER_MODE"
+echo "SSL=$SSL"
+echo "EXTENDED_NAMES=$EXTENDED_NAMES"
+
 # exit when any command fails
 set -e
 
