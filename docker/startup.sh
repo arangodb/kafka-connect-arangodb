@@ -8,10 +8,15 @@ KC=${KC:=false}
 set -e
 
 ./docker/start_db.sh &
-./docker/start_kafka_zk.sh
-if [ "$KC" == "true" ]; then
-  ./docker/start_kafka_connect.sh &
-fi
-./docker/start_schema_registry.sh &
+START_DB_PID=$!
 
-wait
+./docker/start_kafka_zk.sh
+./docker/start_schema_registry.sh &
+START_SCHEMA_REGISTRY_PID=$!
+
+if [ "$KC" == "true" ]; then
+  ./docker/start_kafka_connect.sh
+fi
+
+wait $START_DB_PID
+wait $START_SCHEMA_REGISTRY_PID
