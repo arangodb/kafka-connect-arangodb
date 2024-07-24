@@ -7,11 +7,11 @@ KC=${KC:=false}
 # exit when any command fails
 set -e
 
-./docker/start_db.sh &
+./docker/start_db.sh 2>&1 &
 START_DB_PID=$!
 
 ./docker/start_kafka_zk.sh
-./docker/start_schema_registry.sh &
+./docker/start_schema_registry.sh 2>&1 &
 START_SCHEMA_REGISTRY_PID=$!
 
 if [ "$KC" == "true" ]; then
