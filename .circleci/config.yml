@@ -85,7 +85,7 @@ jobs:
       - load_cache
       - run:
           name: Create Kafka Environment
-          command: ./docker/startup.sh
+          command: ./docker/startup_retry.sh
       - run:
           name: Integration Tests
           command: mvn integration-test
@@ -122,7 +122,7 @@ jobs:
           command: mvn package -Ddistributed
       - run:
           name: Create Kafka Environment
-          command: ./docker/startup.sh
+          command: ./docker/startup_retry.sh
       - run:
           name: Integration Tests
           command: mvn integration-test -Ddistributed -Darango.topology=$STARTER_MODE
@@ -149,7 +149,7 @@ jobs:
           command: mvn package -Ddistributed
       - run:
           name: Create Kafka Environment
-          command: ./docker/startup.sh
+          command: ./docker/startup_retry.sh
       - run:
           name: Integration Tests
           command: mvn integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
@@ -173,7 +173,7 @@ jobs:
       - load_cache
       - run:
           name: Create Kafka Environment
-          command: ./docker/startup.sh
+          command: ./docker/startup_retry.sh
       - run:
           name: Start Toxiproxy
           command: ./bin/startProxy.sh

@@ -6,7 +6,7 @@ docker pull $DOCKER_IMAGE
 KAFKA_BOOTSTRAP_SERVERS=PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092
 
 docker run -d \
-  --name schema-registry -h schema-registry \
+  --name kafka-schema-registry -h kafka-schema-registry \
   --network arangodb \
   -p 8081:8081 \
   -e SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS="$KAFKA_BOOTSTRAP_SERVERS" \

@@ -11,7 +11,7 @@ ZK_DOCKER_IMAGE=docker.io/bitnami/zookeeper:3.8
 docker pull $ZK_DOCKER_IMAGE
 
 docker run -d \
-  --name zk-1 -h zk-1 \
+  --name kafka-zk-1 -h kafka-zk-1 \
   --network arangodb \
   -e BITNAMI_DEBUG=true \
   -e ALLOW_ANONYMOUS_LOGIN="yes" \
@@ -22,7 +22,7 @@ docker run -d \
   --network arangodb \
   -p 19092:19092 \
   -e BITNAMI_DEBUG=true \
-  -e KAFKA_CFG_ZOOKEEPER_CONNECT=zk-1 \
+  -e KAFKA_CFG_ZOOKEEPER_CONNECT=kafka-zk-1 \
   -e ALLOW_PLAINTEXT_LISTENER="yes" \
   -e KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://0.0.0.0:19092 \
   -e KAFKA_CFG_ADVERTISED_LISTENERS="PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://172.28.0.1:19092" \
@@ -35,7 +35,7 @@ docker run -d \
   --network arangodb \
   -p 29092:29092 \
   -e BITNAMI_DEBUG=true \
-  -e KAFKA_CFG_ZOOKEEPER_CONNECT=zk-1 \
+  -e KAFKA_CFG_ZOOKEEPER_CONNECT=kafka-zk-1 \
   -e ALLOW_PLAINTEXT_LISTENER="yes" \
   -e KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://0.0.0.0:29092 \
   -e KAFKA_CFG_ADVERTISED_LISTENERS="PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://172.28.0.1:29092" \
@@ -48,7 +48,7 @@ docker run -d \
   --network arangodb \
   -p 39092:39092 \
   -e BITNAMI_DEBUG=true \
-  -e KAFKA_CFG_ZOOKEEPER_CONNECT=zk-1 \
+  -e KAFKA_CFG_ZOOKEEPER_CONNECT=kafka-zk-1 \
   -e ALLOW_PLAINTEXT_LISTENER="yes" \
   -e KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,PLAINTEXT_HOST://0.0.0.0:39092 \
   -e KAFKA_CFG_ADVERTISED_LISTENERS="PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://172.28.0.1:39092" \
