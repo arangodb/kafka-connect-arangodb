@@ -57,7 +57,7 @@ public class ClusterKafkaConnectDeployment extends KafkaConnectDeployment {
 
     @Override
     public String getSchemaRegistryUrlConnect() {
-        return "http://schema-registry:8081";
+        return "http://kafka-schema-registry:8081";
     }
 
     @Override
