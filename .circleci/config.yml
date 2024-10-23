@@ -95,7 +95,6 @@ jobs:
           when: on_fail
       - store_artifacts:
           path: result.tar.gz
-          when: on_fail
       - report
       - store_cache
 
@@ -139,7 +138,6 @@ jobs:
           when: on_fail
       - store_artifacts:
           path: result.tar.gz
-          when: on_fail
       - report
       - store_cache
 
@@ -173,7 +171,6 @@ jobs:
           when: on_fail
       - store_artifacts:
           path: result.tar.gz
-          when: on_fail
       - report
       - store_cache
 
@@ -208,7 +205,6 @@ jobs:
           when: on_fail
       - store_artifacts:
           path: result.tar.gz
-          when: on_fail
       - report
       - store_cache
 
