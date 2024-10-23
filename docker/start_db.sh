@@ -65,7 +65,7 @@ cp "$LOCATION"/jwtSecret "$LOCATION"/server.pem data
 docker run -d \
     --name=adb \
     -p 8528:8528 \
-    -v ${PWD}/data:/data
+    -v ${PWD}/data:/data \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e ARANGO_LICENSE_KEY="$ARANGO_LICENSE_KEY" \
     $STARTER_DOCKER_IMAGE \
