@@ -92,8 +92,10 @@ jobs:
       - run:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
+          when: on_fail
       - store_artifacts:
           path: result.tar.gz
+          when: on_fail
       - report
       - store_cache
 
@@ -134,8 +136,10 @@ jobs:
       - run:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
+          when: on_fail
       - store_artifacts:
           path: result.tar.gz
+          when: on_fail
       - report
       - store_cache
 
@@ -166,8 +170,10 @@ jobs:
       - run:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
+          when: on_fail
       - store_artifacts:
           path: result.tar.gz
+          when: on_fail
       - report
       - store_cache
 
@@ -199,8 +205,10 @@ jobs:
       - run:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
+          when: on_fail
       - store_artifacts:
           path: result.tar.gz
+          when: on_fail
       - report
       - store_cache
 
