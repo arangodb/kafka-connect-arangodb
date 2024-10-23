@@ -80,7 +80,8 @@ docker run -d \
 
 wait_server() {
     # shellcheck disable=SC2091
-    until $(curl --output /dev/null --insecure --fail --silent --head -i -H "$AUTHORIZATION_HEADER" "$SCHEME://$1/_api/version"); do
+    # --output /dev/null
+    until $(curl  --insecure --fail --silent --head -i -H "$AUTHORIZATION_HEADER" "$SCHEME://$1/_api/version"); do
         printf '.'
         sleep 1
     done
