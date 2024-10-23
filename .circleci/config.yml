@@ -93,7 +93,7 @@ jobs:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
       - store_artifacts:
-          result.tar.gz
+          path: result.tar.gz
       - report
       - store_cache
 
@@ -135,7 +135,7 @@ jobs:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
       - store_artifacts:
-          result.tar.gz
+          path: result.tar.gz
       - report
       - store_cache
 
@@ -167,7 +167,7 @@ jobs:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
       - store_artifacts:
-          result.tar.gz
+          path: result.tar.gz
       - report
       - store_cache
 
@@ -200,7 +200,7 @@ jobs:
           name: zip and retrieve test data
           command: ./docker/stop_db.sh
       - store_artifacts:
-          result.tar.gz
+          path: result.tar.gz
       - report
       - store_cache
 
