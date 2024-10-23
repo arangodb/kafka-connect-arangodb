@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Configuration environment variables:
 #   STARTER_MODE:             (single|cluster|activefailover), default single
