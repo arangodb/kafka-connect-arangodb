@@ -55,14 +55,17 @@ if [ "$EXTENDED_NAMES" == "true" ]; then
 fi
 
 # data volume
-docker create -v /data --name adb-data alpine:3 /bin/true
-docker cp "$LOCATION"/jwtSecret adb-data:/data
-docker cp "$LOCATION"/server.pem adb-data:/data
+#docker create -v /data --name adb-data alpine:3 /bin/true
+#docker cp "$LOCATION"/jwtSecret adb-data:/data
+#docker cp "$LOCATION"/server.pem adb-data:/data
+
+mkdir data
+cp "$LOCATION"/jwtSecret "$LOCATION"/server.pem data
 
 docker run -d \
     --name=adb \
     -p 8528:8528 \
-    --volumes-from adb-data \
+    -v ${PWD}/data:/data
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e ARANGO_LICENSE_KEY="$ARANGO_LICENSE_KEY" \
     $STARTER_DOCKER_IMAGE \
