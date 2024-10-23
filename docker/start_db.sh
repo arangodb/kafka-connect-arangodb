@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Configuration environment variables:
 #   STARTER_MODE:             (single|cluster|activefailover), default single
@@ -55,17 +55,14 @@ if [ "$EXTENDED_NAMES" == "true" ]; then
 fi
 
 # data volume
-#docker create -v /data --name adb-data alpine:3 /bin/true
-#docker cp "$LOCATION"/jwtSecret adb-data:/data
-#docker cp "$LOCATION"/server.pem adb-data:/data
-
-mkdir data
-cp "$LOCATION"/jwtSecret "$LOCATION"/server.pem data
+docker create -v /data --name adb-data alpine:3 /bin/true
+docker cp "$LOCATION"/jwtSecret adb-data:/data
+docker cp "$LOCATION"/server.pem adb-data:/data
 
 docker run -d \
     --name=adb \
     -p 8528:8528 \
-    -v ${PWD}/data:/data \
+    --volumes-from adb-data \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -e ARANGO_LICENSE_KEY="$ARANGO_LICENSE_KEY" \
     $STARTER_DOCKER_IMAGE \
@@ -80,8 +77,7 @@ docker run -d \
 
 wait_server() {
     # shellcheck disable=SC2091
-    # --output /dev/null --silent --head
-    until $(curl  --insecure --fail  -i -H "$AUTHORIZATION_HEADER" "$SCHEME://$1/_api/version"); do
+    until $(curl --output /dev/null --insecure --fail --silent --head -i -H "$AUTHORIZATION_HEADER" "$SCHEME://$1/_api/version"); do
         printf '.'
         sleep 1
     done
