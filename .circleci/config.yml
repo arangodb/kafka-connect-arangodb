@@ -89,6 +89,12 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn integration-test
+      - run:
+          name: zip and retrieve test data
+          command: ./docker/stop_db.sh
+          when: on_fail
+      - store_artifacts:
+          path: result.tar.gz
       - report
       - store_cache
 
@@ -126,6 +132,12 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn integration-test -Ddistributed -Darango.topology=$STARTER_MODE
+      - run:
+          name: zip and retrieve test data
+          command: ./docker/stop_db.sh
+          when: on_fail
+      - store_artifacts:
+          path: result.tar.gz
       - report
       - store_cache
 
@@ -153,6 +165,12 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
+      - run:
+          name: zip and retrieve test data
+          command: ./docker/stop_db.sh
+          when: on_fail
+      - store_artifacts:
+          path: result.tar.gz
       - report
       - store_cache
 
@@ -181,6 +199,12 @@ jobs:
       - run:
           name: Integration Tests
           command: mvn integration-test -DresilienceTests -Darango.topology=$STARTER_MODE -Dit.test=com.arangodb.kafka.resilience.**
+      - run:
+          name: zip and retrieve test data
+          command: ./docker/stop_db.sh
+          when: on_fail
+      - store_artifacts:
+          path: result.tar.gz
       - report
       - store_cache
 
