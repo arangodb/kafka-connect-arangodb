@@ -7,7 +7,7 @@ KAFKA_VERSION=${KAFKA_VERSION:=latest}
 DOCKER_IMAGE=docker.io/bitnami/kafka:$KAFKA_VERSION
 docker pull $DOCKER_IMAGE
 
-ZK_DOCKER_IMAGE=docker.io/bitnami/zookeeper:3.8
+ZK_DOCKER_IMAGE=docker.io/bitnami/zookeeper:3.9
 docker pull $ZK_DOCKER_IMAGE
 
 docker run -d \
