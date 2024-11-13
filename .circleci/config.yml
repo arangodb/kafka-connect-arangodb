@@ -111,7 +111,7 @@ jobs:
         default: 'single'
       kafka-version:
         type: 'string'
-        default: '3.8'
+        default: '3.9'
     environment:
       STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: <<parameters.docker-img>>
@@ -284,6 +284,7 @@ workflows:
               jdk:
                 - 'j11'
               kafka-version:
+                - '3.9'
                 - '3.8'
                 - '3.7'
                 - '3.6'

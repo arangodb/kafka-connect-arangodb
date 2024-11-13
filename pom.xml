@@ -60,7 +60,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kafka.version>3.8.0</kafka.version>
+        <kafka.version>3.9.0</kafka.version>
         <confluent.version>7.6.1</confluent.version>
         <arangodb.version>7.7.1</arangodb.version>
         <jackson.version>2.16.2</jackson.version>
