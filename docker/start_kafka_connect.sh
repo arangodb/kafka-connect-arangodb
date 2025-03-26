@@ -3,7 +3,7 @@
 # exit when any command fails
 set -e
 
-KAFKA_VERSION=${KAFKA_VERSION:=latest}
+KAFKA_VERSION=${KAFKA_VERSION:=3.9}
 DOCKER_IMAGE=docker.io/bitnami/kafka:$KAFKA_VERSION
 docker pull $DOCKER_IMAGE
 
