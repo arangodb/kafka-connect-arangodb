@@ -8,6 +8,6 @@ public class ArangoSinkTaskTest {
     @Test
     void version(){
         String version = new ArangoSinkTask().version();
-        assertThat(version).isEqualTo("1.3.0");
+        assertThat(version).isEqualTo("1.4.0-SNAPSHOT");
     }
 }
