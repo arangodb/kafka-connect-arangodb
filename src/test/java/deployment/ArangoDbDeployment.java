@@ -5,10 +5,12 @@ import java.util.List;
 public interface ArangoDbDeployment {
 
     static ArangoDbDeployment getInstance() {
-        if (!Boolean.parseBoolean(System.getProperty("resilienceTests"))) {
-            return PlainArangoDbDeployment.INSTANCE;
-        } else {
+        String resilienceTests = System.getProperty("resilienceTests");
+        if (resilienceTests != null &&
+                (resilienceTests.isEmpty() || resilienceTests.equalsIgnoreCase("true"))) {
             return ProxiedArangoDbDeployment.INSTANCE;
+        } else {
+            return PlainArangoDbDeployment.INSTANCE;
         }
     }
 

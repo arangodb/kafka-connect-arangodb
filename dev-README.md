@@ -29,3 +29,9 @@ Integration tests with cluster Kafka Connect:
 ```shell
 mvn clean integration-test -Pcluster -Darango.endpoints=172.28.0.1:8529,172.28.0.1:8539,172.28.0.1:8549
 ```
+
+## check dependencies updates
+```shell
+mvn versions:display-dependency-updates
+mvn versions:display-plugin-updates
+```
