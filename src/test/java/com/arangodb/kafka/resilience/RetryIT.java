@@ -26,11 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfSystemProperty(named = "resilienceTests", matches = "true")
 class RetryIT {
 
-    static {
-        // enable ProxiedArangoDbDeployment
-        System.setProperty("resilienceTests", "true");
-    }
-
     private final List<ProxiedEndpoint> endpoints = ArangoDbDeployment.getInstance().getProxiedEndpoints();
 
     @BeforeEach

@@ -24,11 +24,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 @EnabledIfSystemProperty(named = "resilienceTests", matches = "true")
 class FailoverIT {
 
-    static {
-        // enable ProxiedArangoDbDeployment
-        System.setProperty("resilienceTests", "true");
-    }
-
     private final List<ProxiedEndpoint> endpoints = ArangoDbDeployment.getInstance().getProxiedEndpoints();
 
     @BeforeEach
