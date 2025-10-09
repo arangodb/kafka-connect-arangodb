@@ -57,7 +57,7 @@ public class StandaloneKafkaConnectDeployment extends KafkaConnectDeployment {
 
     @Override
     public String getSchemaRegistryUrlConnect() {
-        return "http://172.28.0.1:8081";
+        return System.getProperty("connect.schema.registry.url", "http://172.28.0.1:8081");
     }
 
     @Override

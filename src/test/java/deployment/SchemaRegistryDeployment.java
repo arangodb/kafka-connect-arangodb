@@ -25,7 +25,7 @@ public class SchemaRegistryDeployment {
     }
 
     public static String getSchemaRegistryUrlClient() {
-        return "http://172.28.0.1:8081";
+        return System.getProperty("client.schema.registry.url", "http://172.28.0.1:8081");
     }
 
 }
