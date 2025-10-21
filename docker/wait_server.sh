@@ -2,7 +2,7 @@
 
 wait_server() {
     # shellcheck disable=SC2091
-    until $(nc -z $1 $2); do
+    until $(/usr/bin/nc -z $1 $2); do
         printf '.'
         sleep 1
     done
