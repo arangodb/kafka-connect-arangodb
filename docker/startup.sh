@@ -10,7 +10,7 @@ set -e
 ./docker/start_db.sh 2>&1 &
 START_DB_PID=$!
 
-./docker/start_kafka_zk.sh
+./docker/start_kafka.sh
 ./docker/start_schema_registry.sh 2>&1 &
 START_SCHEMA_REGISTRY_PID=$!
 

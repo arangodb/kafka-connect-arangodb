@@ -50,8 +50,8 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kafka.version>3.9.1</kafka.version>
-        <confluent.version>7.9.3</confluent.version>
-        <arangodb.version>7.22.0</arangodb.version>
+        <confluent.version>7.9.5</confluent.version>
+        <arangodb.version>7.24.0</arangodb.version>
         <jackson.version>2.16.2</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
     </properties>
@@ -218,7 +218,7 @@
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-junit5</artifactId>
-            <version>2.30.0</version>
+            <version>2.32.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -240,41 +240,14 @@
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
-                <version>5.14.0</version>
+                <version>5.14.1</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-compress</artifactId>
-                <version>1.26.2</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>1.17.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>3.14.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.bytebuddy</groupId>
-                <artifactId>byte-buddy</artifactId>
-                <version>1.14.5</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.google.errorprone</groupId>
-                <artifactId>error_prone_annotations</artifactId>
-                <version>2.18.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -296,7 +269,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>3.4.0</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
                 </configuration>
@@ -304,7 +277,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>3.4.0</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -401,12 +374,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.2</version>
+                <version>3.5.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.7.1</version>
+                <version>3.8.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -449,7 +422,7 @@
                                     </excludes>
                                 </dependencyConvergence>
                                 <requireMavenVersion>
-                                    <version>3.8</version>
+                                    <version>3.9</version>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
                                     <version>8</version>
@@ -551,7 +524,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.19.1</version>
+                <version>2.20.1</version>
                 <configuration>
                     <ruleSet>
                         <rules>
@@ -568,11 +541,7 @@
                                 <ignoreVersions>
                                     <ignoreVersion>
                                         <type>regex</type>
-                                        <version>4..*</version>
-                                    </ignoreVersion>
-                                    <ignoreVersion>
-                                        <type>regex</type>
-                                        <version>8..*</version>
+                                        <version>[4-9]\..*</version>
                                     </ignoreVersion>
                                 </ignoreVersions>
                             </rule>
