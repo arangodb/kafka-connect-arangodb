@@ -5,7 +5,7 @@
 Set package version:
 
 ```shell
-export PACKAGE_VERSION=1.4.0
+export PACKAGE_VERSION=2.0.0
 ```
 
 Create the Docker network:

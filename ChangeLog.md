@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
+## [2.0.0] - 2025-12-23
+
+- added Kafka 4.1 support
+- added Kafka 4.0 support
+
 ## [1.4.0] - 2025-12-23
 
 - added Kafka 3.9 support
