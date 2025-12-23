@@ -3,8 +3,8 @@
 # exit when any command fails
 set -e
 
-KAFKA_VERSION=${KAFKA_VERSION:=3.9}
-DOCKER_IMAGE=docker.io/bitnamilegacy/kafka:$KAFKA_VERSION
+KAFKA_VERSION=${KAFKA_VERSION:=4.1.1}
+DOCKER_IMAGE=docker.io/apache/kafka:$KAFKA_VERSION
 docker pull $DOCKER_IMAGE
 
 KAFKA_BOOTSTRAP_SERVERS=kafka-1:9092,kafka-2:9092,kafka-3:9092
@@ -24,9 +24,8 @@ docker run -d \
   --network arangodb \
   -p 18083:8083 \
   --volumes-from kafka-connect-data-1 \
-  -e BITNAMI_DEBUG=true \
   $DOCKER_IMAGE \
-  /opt/bitnami/kafka/bin/connect-distributed.sh /tmp/connect-distributed-1.properties
+  /opt/kafka/bin/connect-distributed.sh /tmp/connect-distributed-1.properties
 
 # data volume 2
 docker create -v /tmp --name kafka-connect-data-2 alpine:3 /bin/true
@@ -39,9 +38,8 @@ docker run -d \
   --network arangodb \
   -p 28083:8083 \
   --volumes-from kafka-connect-data-2 \
-  -e BITNAMI_DEBUG=true \
   $DOCKER_IMAGE \
-  /opt/bitnami/kafka/bin/connect-distributed.sh /tmp/connect-distributed-2.properties
+  /opt/kafka/bin/connect-distributed.sh /tmp/connect-distributed-2.properties
 
 wait_server() {
     # shellcheck disable=SC2091

@@ -49,10 +49,10 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <kafka.version>3.9.1</kafka.version>
-        <confluent.version>7.9.5</confluent.version>
+        <kafka.version>4.1.1</kafka.version>
+        <confluent.version>8.1.1</confluent.version>
         <arangodb.version>7.24.0</arangodb.version>
-        <jackson.version>2.16.2</jackson.version>
+        <jackson.version>2.19.0</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
     </properties>
 
@@ -194,7 +194,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>4.11.0</version>
+            <version>5.21.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -541,21 +541,21 @@
                                 <ignoreVersions>
                                     <ignoreVersion>
                                         <type>regex</type>
-                                        <version>[4-9]\..*</version>
-                                    </ignoreVersion>
-                                </ignoreVersions>
-                            </rule>
-                            <rule>
-                                <groupId>io.confluent</groupId>
-                                <ignoreVersions>
-                                    <ignoreVersion>
-                                        <type>regex</type>
-                                        <version>8..*</version>
+                                        <version>[5-9]\..*</version>
                                     </ignoreVersion>
                                 </ignoreVersions>
                             </rule>
                             <rule>
                                 <groupId>org.junit.platform</groupId>
+                                <ignoreVersions>
+                                    <ignoreVersion>
+                                        <type>regex</type>
+                                        <version>6..*</version>
+                                    </ignoreVersion>
+                                </ignoreVersions>
+                            </rule>
+                            <rule>
+                                <groupId>org.junit.vintage</groupId>
                                 <ignoreVersions>
                                     <ignoreVersion>
                                         <type>regex</type>

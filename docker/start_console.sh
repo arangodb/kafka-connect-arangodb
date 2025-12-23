@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKER_IMAGE=docker.io/redpandadata/console:v2.2.4
+DOCKER_IMAGE=docker.io/redpandadata/console:v3.3.2
 docker pull $DOCKER_IMAGE
 
 docker run -d \
