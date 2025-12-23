@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DOCKER_IMAGE=docker.io/confluentinc/cp-schema-registry:7.5.2
+DOCKER_IMAGE=docker.io/confluentinc/cp-schema-registry:8.0.3
 docker pull $DOCKER_IMAGE
 
 KAFKA_BOOTSTRAP_SERVERS=PLAINTEXT://kafka-1:9092,PLAINTEXT://kafka-2:9092,PLAINTEXT://kafka-3:9092

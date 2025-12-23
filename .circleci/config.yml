@@ -51,18 +51,15 @@ commands:
           command: mvn -s .circleci/maven-release-settings.xml -Dmaven.test.skip=true deploy
 
 executors:
-  j8:
-    docker:
-      - image: 'cimg/openjdk:8.0'
-  j11:
-    docker:
-      - image: 'cimg/openjdk:11.0'
   j17:
     docker:
       - image: 'cimg/openjdk:17.0'
   j21:
     docker:
       - image: 'cimg/openjdk:21.0'
+  j25:
+    docker:
+      - image: 'cimg/openjdk:25.0'
 
 jobs:
   test-standalone:
@@ -106,7 +103,7 @@ jobs:
         default: 'single'
       kafka-version:
         type: 'string'
-        default: '3.9'
+        default: '4.1.1'
     environment:
       STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: <<parameters.docker-img>>
@@ -204,9 +201,10 @@ jobs:
       - store_cache
 
   deploy:
-    executor: 'j8'
+    executor: 'j17'
     steps:
-      - timeout
+      - timeout:
+          duration: '30m'
       - checkout
       - load_cache
       - config_gpg
@@ -227,10 +225,9 @@ workflows:
           matrix:
             parameters:
               jdk:
-                - 'j8'
-                - 'j11'
                 - 'j17'
                 - 'j21'
+                - 'j25'
 
   test-distributed-adb-versions:
     when:
@@ -264,11 +261,10 @@ workflows:
           matrix:
             parameters:
               jdk:
-                - 'j11'
+                - 'j17'
               kafka-version:
-                - '3.9'
-                - '3.8'
-                - '3.7'
+                - '4.1.1'
+                - '4.0.1'
 
   test-ssl:
     jobs:

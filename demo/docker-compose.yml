@@ -83,7 +83,7 @@ services:
     command: /opt/bitnami/kafka/bin/connect-distributed.sh /tmp/connect-distributed-2.properties
 
   redpanda-console:
-    image: docker.io/redpandadata/console:v2.3.8
+    image: docker.io/redpandadata/console:v3.3.2
     ports:
       - '8080:8080'
     environment:
