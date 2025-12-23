@@ -5,6 +5,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-12-23
+
+- added Kafka 3.9 support
+- added Kafka 3.8 support
+- updated `arangodb-java-driver` to version `7.24.0`
+
 ## [1.3.0] - 2024-07-08
 
 - added Kafka 3.7 support (DE-791, #37)
