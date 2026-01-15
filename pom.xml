@@ -51,7 +51,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kafka.version>4.1.1</kafka.version>
         <confluent.version>8.1.1</confluent.version>
-        <arangodb.version>7.24.0</arangodb.version>
+        <arangodb.version>7.25.0</arangodb.version>
         <jackson.version>2.19.0</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
     </properties>

@@ -28,15 +28,6 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -659,40 +650,6 @@ public class ArangoSinkConfig extends AbstractConfig {
                 CONNECTION_CONTENT_TYPE + "=" + contentType + "] is not supported.");
     }
 
-    private SSLContext createSslContext() {
-        String certValue = getString(CONNECTION_SSL_CERT_VALUE);
-        String sslCertType = getString(CONNECTION_SSL_CERT_TYPE);
-        String sslKeystoreType = getString(CONNECTION_SSL_KEYSTORE_TYPE);
-        String sslCertAlias = getString(CONNECTION_SSL_CERT_ALIAS);
-        String sslAlgorithm = getString(CONNECTION_SSL_ALGORITHM);
-        String sslProtocol = getString(CONNECTION_SSL_PROTOCOL);
-        String trustStoreLocation = getString(CONNECTION_SSL_TRUSTSTORE_LOCATION);
-        Password trustStorePassword = getPassword(CONNECTION_SSL_TRUSTSTORE_PASSWORD);
-
-        try {
-            KeyStore ks = KeyStore.getInstance(sslKeystoreType);
-            if (certValue != null) {
-                ByteArrayInputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(certValue));
-                Certificate cert = CertificateFactory.getInstance(sslCertType).generateCertificate(is);
-                ks.load(null);
-                ks.setCertificateEntry(sslCertAlias, cert);
-            } else if (trustStoreLocation != null) {
-                DataInputStream stream = new DataInputStream(Files.newInputStream(Paths.get(trustStoreLocation)));
-                ks.load(stream, trustStorePassword.value().toCharArray());
-            } else {
-                return SSLContext.getDefault();
-            }
-
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(sslAlgorithm);
-            tmf.init(ks);
-            SSLContext sc = SSLContext.getInstance(sslProtocol);
-            sc.init(null, tmf.getTrustManagers(), null);
-            return sc;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private ArangoDB.Builder createAdbBuilder() {
         Password passwd = getPassword(CONNECTION_PASSWORD);
         ArangoDB.Builder builder = new ArangoDB.Builder()
@@ -707,7 +664,14 @@ public class ArangoSinkConfig extends AbstractConfig {
         if (getBoolean(CONNECTION_SSL_ENABLED)) {
             builder
                     .useSsl(true)
-                    .sslContext(createSslContext())
+                    .sslCertValue(getString(CONNECTION_SSL_CERT_VALUE))
+                    .sslTrustStoreType(getString(CONNECTION_SSL_KEYSTORE_TYPE))
+                    .sslAlgorithm(getString(CONNECTION_SSL_ALGORITHM))
+                    .sslProtocol(getString(CONNECTION_SSL_PROTOCOL))
+                    .sslTrustStorePath(getString(CONNECTION_SSL_TRUSTSTORE_LOCATION))
+                    .sslTrustStorePassword(Optional.ofNullable(getPassword(CONNECTION_SSL_TRUSTSTORE_PASSWORD))
+                            .map(Password::value)
+                            .orElse(null))
                     .verifyHost(getBoolean(CONNECTION_SSL_HOSTNAME_VERIFICATION));
         }
         return builder;
