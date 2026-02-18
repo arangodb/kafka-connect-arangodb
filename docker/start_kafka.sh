@@ -3,7 +3,7 @@
 # exit when any command fails
 set -e
 
-KAFKA_VERSION=${KAFKA_VERSION:=4.1.1}
+KAFKA_VERSION=${KAFKA_VERSION:=4.2.0}
 DOCKER_IMAGE=docker.io/apache/kafka-native:$KAFKA_VERSION
 docker pull $DOCKER_IMAGE
 
