@@ -2,7 +2,7 @@ version: "2"
 
 services:
   kafka-1:
-    image: docker.io/apache/kafka-native:4.1.1
+    image: docker.io/apache/kafka-native:4.2.0
     ports:
       - '19092:19092'
     environment:
@@ -17,7 +17,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
 
   kafka-2:
-    image: docker.io/apache/kafka-native:4.1.1
+    image: docker.io/apache/kafka-native:4.2.0
     ports:
       - '29092:29092'
     environment:
@@ -32,7 +32,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
 
   kafka-3:
-    image: docker.io/apache/kafka-native:4.1.1
+    image: docker.io/apache/kafka-native:4.2.0
     ports:
       - '39092:39092'
     environment:
@@ -47,7 +47,7 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
 
   kafka-connect-1:
-    image: docker.io/apache/kafka:4.1.1
+    image: docker.io/apache/kafka:4.2.0
     depends_on:
       - kafka-1
       - kafka-2
@@ -60,7 +60,7 @@ services:
     command: /opt/kafka/bin/connect-distributed.sh /tmp/connect-distributed-1.properties
 
   kafka-connect-2:
-    image: docker.io/apache/kafka:4.1.1
+    image: docker.io/apache/kafka:4.2.0
     depends_on:
       - kafka-1
       - kafka-2
