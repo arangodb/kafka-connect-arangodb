@@ -64,6 +64,7 @@ docker run -d \
     -p 8528:8528 \
     --volumes-from adb-data \
     -v /var/run/docker.sock:/var/run/docker.sock \
+    --security-opt label=disable \
     -e ARANGO_LICENSE_KEY="$ARANGO_LICENSE_KEY" \
     $STARTER_DOCKER_IMAGE \
     $STARTER_ARGS \
