@@ -33,7 +33,6 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.connect.runtime.SinkConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,6 +134,7 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
         Map<String, Object> cfg = new HashMap<>();
         cfg.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConnectDeployment.getInstance().getBootstrapServers());
         cfg.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
+        cfg.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 10_000);
         return cfg;
     }
 
@@ -174,7 +174,18 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     public void produce(Object key, Map<String, Object> value) {
         Object serKey = key != null ? serializeRecordKey(key) : null;
         Object serValue = value != null ? serializeRecordValue(value) : null;
-        producer.send(new ProducerRecord<>(name, serKey, serValue));
+        try {
+            producer.send(new ProducerRecord<>(name, serKey, serValue), (__, e) -> {
+                if (e != null) {
+                    throw new RuntimeException("Failed to send message to Kafka", e);
+                }
+            }).get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
         producer.flush();
     }
 
@@ -236,17 +247,6 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     }
 
     private void createTopic(String topicName) throws ExecutionException, InterruptedException {
-        adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, getTopicPartitions(), Config.TOPIC_REPLICATION_FACTOR)))
-                .all()
-                .toCompletionStage()
-                .handle((v, e) -> {
-                    if (e == null || e instanceof TopicExistsException) {
-                        return null;
-                    } else {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toCompletableFuture()
-                .get();
+        adminClient.createTopics(Collections.singletonList(new NewTopic(topicName, getTopicPartitions(), Config.TOPIC_REPLICATION_FACTOR))).all().get();
     }
 }
