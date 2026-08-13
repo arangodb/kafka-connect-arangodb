@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Configuration environment variables:
-#   STARTER_MODE:             (single|cluster), default single
+#   STARTER_MODE:             (single|cluster|activefailover), default single
 #   DOCKER_IMAGE:             ArangoDB docker image, default docker.io/arangodb/enterprise:latest
+#   STARTER_DOCKER_IMAGE:     ArangoDB Starter docker image
 #   SSL:                      (true|false), default false
-#   EXTENDED_NAMES:  (true|false), default false
 #   ARANGO_LICENSE_KEY:       only required for ArangoDB Enterprise
 
 # EXAMPLE:
@@ -12,19 +12,19 @@
 
 STARTER_MODE=${STARTER_MODE:=single}
 DOCKER_IMAGE=${DOCKER_IMAGE:=docker.io/arangodb/enterprise:latest}
+STARTER_VERSION=$(docker run --rm -e ARANGO_NO_AUTH=1 --entrypoint arangodb ${DOCKER_IMAGE} --version | { read -r first rest; echo "${rest%%,*}"; })
+ARANGO_VERSION=$(docker run --rm --entrypoint arangod ${DOCKER_IMAGE} --version | awk '/^server-version:/ {print $2}')
+ARANGO_MINOR_VERSION=$(echo "$ARANGO_VERSION" | cut -d'.' -f1,2)
+echo "arangod version: $ARANGO_VERSION"
+echo "arangod minor version: $ARANGO_MINOR_VERSION"
+STARTER_DOCKER_IMAGE=${STARTER_DOCKER_IMAGE:=docker.io/arangodb/arangodb-starter:$STARTER_VERSION}
+
+echo "starter docker image: $STARTER_DOCKER_IMAGE"
 SSL=${SSL:=false}
-EXTENDED_NAMES=${EXTENDED_NAMES:=false}
+COMPRESSION=${COMPRESSION:=false}
 
-STARTER_DOCKER_IMAGE=docker.io/arangodb/arangodb-starter:latest
 GW=172.28.0.1
-
-echo "---"
-echo "starting ArangoDB with:"
-echo "DOCKER_IMAGE=$DOCKER_IMAGE"
-echo "STARTER_DOCKER_IMAGE=$STARTER_DOCKER_IMAGE"
-echo "STARTER_MODE=$STARTER_MODE"
-echo "SSL=$SSL"
-echo "EXTENDED_NAMES=$EXTENDED_NAMES"
+docker network create arangodb --subnet 172.28.0.0/16
 
 # exit when any command fails
 set -e
@@ -50,19 +50,23 @@ if [ "$SSL" == "true" ]; then
     ARANGOSH_SCHEME=http+ssl
 fi
 
-if [ "$EXTENDED_NAMES" == "true" ]; then
-    STARTER_ARGS="${STARTER_ARGS} --all.database.extended-names=true"
+if [ "$COMPRESSION" == "true" ]; then
+    STARTER_ARGS="${STARTER_ARGS} --all.http.compress-response-threshold=1"
+fi
+
+if [ "$ARANGO_MINOR_VERSION" == "3.12" ]; then
+    STARTER_ARGS="${STARTER_ARGS} --all.experimental-vector-index=true"
 fi
 
 # data volume
-docker create -v /data --name adb-data alpine:3 /bin/true
-docker cp "$LOCATION"/jwtSecret adb-data:/data
-docker cp "$LOCATION"/server.pem adb-data:/data
+docker create -v /data --name arangodb-data alpine:3 /bin/true
+docker cp "$LOCATION"/jwtSecret arangodb-data:/data
+docker cp "$LOCATION"/server.pem arangodb-data:/data
 
 docker run -d \
     --name=adb \
     -p 8528:8528 \
-    --volumes-from adb-data \
+    --volumes-from arangodb-data \
     -v /var/run/docker.sock:/var/run/docker.sock \
     --security-opt label=disable \
     -e ARANGO_LICENSE_KEY="$ARANGO_LICENSE_KEY" \
@@ -73,7 +77,8 @@ docker run -d \
     --auth.jwt-secret=/data/jwtSecret \
     --starter.address="${GW}" \
     --docker.image="${DOCKER_IMAGE}" \
-    --starter.local --starter.mode=${STARTER_MODE} --all.log.level=debug --all.log.output=+ --log.verbose --all.server.descriptors-minimum=1024
+    --starter.local --starter.mode=${STARTER_MODE} --all.log.level=debug --all.log.output=+ --log.verbose \
+    --all.server.descriptors-minimum=1024 --all.javascript.allow-admin-execute=true --all.server.maximal-threads=128
 
 
 wait_server() {
@@ -111,3 +116,9 @@ for a in ${COORDINATORS[*]} ; do
     echo "$SCHEME://$a"
     echo ""
 done
+
+if [ "$STARTER_MODE" == "activefailover" ]; then
+  LEADER=$("$LOCATION"/find_active_endpoint.sh)
+  echo "Leader: $SCHEME://$LEADER"
+  echo ""
+fi
