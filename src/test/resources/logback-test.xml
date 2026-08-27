@@ -13,6 +13,11 @@
 
     <logger name="org.reflections.Reflections" level="ERROR"/>
     <logger name="org.apache.kafka.connect.runtime.isolation.DelegatingClassLoader" level="WARN"/>
+    <!--
+      Enable with -Drecord.trace.level=DEBUG.  This logger follows a record from
+      the test producer acknowledgement to the sink task and the ArangoDB write.
+    -->
+    <logger name="com.arangodb.kafka.recordflow" level="${record.trace.level:-OFF}"/>
 <!--    <logger name="com.arangodb.kafka" level="TRACE"/>-->
 <!--    <logger name="com.arangodb.internal.net.Communication" level="DEBUG" />-->
 

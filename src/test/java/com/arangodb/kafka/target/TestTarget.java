@@ -33,6 +33,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.connect.runtime.SinkConnectorConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,7 @@ import java.util.concurrent.*;
 
 public abstract class TestTarget implements Connector, Producer, Closeable {
     private final static Logger LOG = LoggerFactory.getLogger(TestTarget.class);
+    private final static Logger RECORD_FLOW_LOG = LoggerFactory.getLogger("com.arangodb.kafka.recordflow.TestClient");
 
     private final String name;
     private final String dlqName;
@@ -174,19 +176,25 @@ public abstract class TestTarget implements Connector, Producer, Closeable {
     public void produce(Object key, Map<String, Object> value) {
         Object serKey = key != null ? serializeRecordKey(key) : null;
         Object serValue = value != null ? serializeRecordValue(value) : null;
+        RECORD_FLOW_LOG.debug("SEND topic={} key={} value={}", name, serKey, serValue);
+        Future<RecordMetadata> sendFuture = producer.send(new ProducerRecord<>(name, serKey, serValue), (meta, ex) -> {
+            if (ex != null) {
+                LOG.error("SEND_ERROR topic={} partition={} offset={} timestamp={} key={}",
+                        meta.topic(), meta.partition(), meta.offset(), meta.timestamp(), serKey, ex);
+            } else {
+                RECORD_FLOW_LOG.debug("BROKER_ACK topic={} partition={} offset={} timestamp={} key={}",
+                        meta.topic(), meta.partition(), meta.offset(), meta.timestamp(), serKey);
+            }
+        });
+        producer.flush();
         try {
-            producer.send(new ProducerRecord<>(name, serKey, serValue), (__, e) -> {
-                if (e != null) {
-                    throw new RuntimeException("Failed to send message to Kafka", e);
-                }
-            }).get();
+            sendFuture.get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
-        producer.flush();
     }
 
     @Override

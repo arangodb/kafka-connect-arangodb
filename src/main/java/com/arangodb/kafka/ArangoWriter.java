@@ -45,6 +45,7 @@ public class ArangoWriter {
     private enum Type {INSERT, DELETE}
 
     private final static Logger LOG = LoggerFactory.getLogger(ArangoWriter.class);
+    private final static Logger RECORD_FLOW_LOG = LoggerFactory.getLogger("com.arangodb.kafka.recordflow.ArangoWriter");
     private final static Set<Integer> DATA_ERROR_NUMS = new HashSet<>(Arrays.asList(
             1208,   // illegal name (document violating smart collection key)
             1210,   // unique constraint violated
@@ -248,6 +249,12 @@ public class ArangoWriter {
         checkResultSize(batch, docsAndErrs);
         checkTransientErrors(batch, docsAndErrs);
         checkDataErrors(batch, docsAndErrs);
+        if (RECORD_FLOW_LOG.isDebugEnabled()) {
+            List<JsonNode> keys = docs.stream()
+                    .map(it -> it.get("_key"))
+                    .collect(Collectors.toList());
+            RECORD_FLOW_LOG.debug("ARANGODB_WRITTEN collection={} keys={}", col.name(), keys);
+        }
     }
 
     private void checkTransientErrors(List<SinkRecord> batch, List<Object> docsAndErrs) {

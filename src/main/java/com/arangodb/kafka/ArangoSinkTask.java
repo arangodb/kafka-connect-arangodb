@@ -29,9 +29,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class ArangoSinkTask extends SinkTask {
     private static final Logger LOG = LoggerFactory.getLogger(ArangoSinkTask.class);
+    private static final Logger RECORD_FLOW_LOG = LoggerFactory.getLogger("com.arangodb.kafka.recordflow.SinkTask");
     private ArangoCollection col;
     private ArangoWriter writer;
 
@@ -56,6 +58,13 @@ public class ArangoSinkTask extends SinkTask {
 
     @Override
     public void put(Collection<SinkRecord> records) {
+        if (RECORD_FLOW_LOG.isDebugEnabled()) {
+            String received = records.stream()
+                    .map(record -> String.format("%s-%d-%d key=%s value=%s", record.topic(),
+                            record.kafkaPartition(), record.kafkaOffset(), record.key(), record.value()))
+                    .collect(Collectors.joining(", "));
+            RECORD_FLOW_LOG.debug("CONNECT_RECEIVED count={} records=[{}]", records.size(), received);
+        }
         writer.put(records);
     }
 
