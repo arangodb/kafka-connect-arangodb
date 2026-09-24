@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kafka Connect ArangoDB Development"
+  short_description: "Maintain the connector and select CI-aligned tests"
+  default_prompt: "Use $kafka-connect-arangodb-development to implement and validate a change in this repository."

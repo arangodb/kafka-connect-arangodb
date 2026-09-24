@@ -12,5 +12,6 @@ Kafka Connect ArangoDB Sink Connector
 ## Learn more
 
 - [ChangeLog](ChangeLog.md)
+- [Development](dev-README.md)
 - [Demo](./demo)
 - [Documentation](https://www.arangodb.com/docs/stable/drivers/kafka-connector.html)
