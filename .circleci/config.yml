@@ -103,7 +103,7 @@ jobs:
         default: 'single'
       kafka-version:
         type: 'string'
-        default: '4.2.0'
+        default: '4.3.1'
     environment:
       STARTER_MODE: <<parameters.topology>>
       DOCKER_IMAGE: <<parameters.docker-img>>
@@ -264,9 +264,9 @@ workflows:
               jdk:
                 - 'j17'
               kafka-version:
-                - '4.2.0'
-                - '4.1.1'
-                - '4.0.1'
+                - '4.3.1'
+                - '4.2.1'
+                - '4.1.2'
 
   test-ssl:
     jobs:

@@ -72,7 +72,7 @@ JDK 21, one ArangoDB server, embedded Connect. The explicit environment values
 below make script defaults independent of a preceding local run.
 
 ```sh
-KC=false SSL=false STARTER_MODE=single KAFKA_VERSION=4.2.0 ./docker/startup_retry.sh
+KC=false SSL=false STARTER_MODE=single KAFKA_VERSION=4.3.1 ./docker/startup_retry.sh
 mvn integration-test
 ```
 
@@ -82,7 +82,7 @@ Select the JDK/image/topology/Kafka combination from the matrix below. Package
 **before** startup, as CI does; two Docker Connect workers load copied JARs.
 
 ```sh
-export STARTER_MODE=single KAFKA_VERSION=4.2.0
+export STARTER_MODE=single KAFKA_VERSION=4.3.1
 mvn package -Ddistributed
 KC=true SSL=false ./docker/startup_retry.sh
 mvn integration-test -Ddistributed -Darango.topology="$STARTER_MODE"
@@ -103,7 +103,7 @@ setup and the case-sensitive JUnit enablement property are required.
 
 ```sh
 mvn package -Ddistributed
-KC=true SSL=true STARTER_MODE=single KAFKA_VERSION=4.2.0 ./docker/startup_retry.sh
+KC=true SSL=true STARTER_MODE=single KAFKA_VERSION=4.3.1 ./docker/startup_retry.sh
 mvn integration-test -Ddistributed -DSslTest=true -Dit.test=com.arangodb.kafka.SslIT
 ```
 
@@ -113,7 +113,7 @@ JDK 21, clustered ArangoDB, **standalone** Connect. Do not add `-Ddistributed` o
 `KC=true`: the proxies and logger assertions run in the test process's environment.
 
 ```sh
-KC=false SSL=false STARTER_MODE=cluster KAFKA_VERSION=4.2.0 ./docker/startup_retry.sh
+KC=false SSL=false STARTER_MODE=cluster KAFKA_VERSION=4.3.1 ./docker/startup_retry.sh
 ```
 
 Start the proxy in another terminal and keep it running for the test command
@@ -138,7 +138,7 @@ the classes alone can yield skipped tests. Stop the proxy after the run.
 ## CI matrix
 
 These are separate workflow matrices, **not** one full Cartesian product.
-Unless a row overrides them, distributed jobs use JDK 21, `single`, Kafka 4.2.0,
+Unless a row overrides them, distributed jobs use JDK 21, `single`, Kafka 4.3.1,
 and the pipeline's ArangoDB image (or the script default).
 
 | Workflow | Variants |
@@ -146,7 +146,7 @@ and the pipeline's ArangoDB image (or the script default).
 | `test-distributed-jdk-versions` | Host JDK 17, 21, 25. |
 | `test-distributed-adb-versions` | When no pipeline image is supplied: `docker.io/arangodb/enterprise:3.12` and `docker.io/arangodb/core-preview:4-nightly`, each with `single` and `cluster`. |
 | `test-distributed-adb-topologies` | When a pipeline image is supplied: that image with `single` and `cluster`. |
-| `test-distributed-kafka-versions` | Host JDK 17 with Kafka 4.2.0, 4.1.1, and 4.0.1. |
+| `test-distributed-kafka-versions` | Host JDK 17 with Kafka 4.3.1, 4.1.1, and 4.0.1. |
 
 `KAFKA_VERSION` selects broker/worker Docker images. It does **not** override the
 POM's `kafka.version`, which controls compilation and embedded test dependencies.
